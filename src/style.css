@@ -1,0 +1,178 @@
+:root {
+  font-family: "JetBrains Mono", monospace;
+  font-optical-sizing: auto;
+  font-style: normal;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  padding: 0;
+  font-family: inherit;
+}
+
+#terminal {
+  width: 100%;
+  height: 100%;
+  background-color: #24292e;
+  font-family: inherit;
+  color: #f6f8fa;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.cursor {
+  animation: blink 1s cubic-bezier(1, 0, 0, 1) infinite;
+  color: #f6f8fa;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.pl-c {
+  color: #959da5;
+}
+.pl-c1,
+.pl-s .pl-v {
+  color: #c8e1ff;
+}
+.pl-e,
+.pl-en {
+  color: #b392f0;
+}
+.pl-smi,
+.pl-s .pl-s1 {
+  color: #f6f8fa;
+}
+.pl-ent {
+  color: #7bcc72;
+}
+.pl-k {
+  color: #ea4a5a;
+}
+.pl-s,
+.pl-pds,
+.pl-s .pl-pse .pl-s1,
+.pl-sr,
+.pl-sr .pl-cce,
+.pl-sr .pl-sre,
+.pl-sr .pl-sra {
+  color: #79b8ff;
+}
+.pl-v,
+.pl-ml {
+  color: #fb8532;
+}
+.pl-bu {
+  color: #d73a49;
+}
+.pl-ii {
+  color: #fafbfc;
+  background-color: #d73a49;
+}
+.pl-c2 {
+  color: #fafbfc;
+  background-color: #d73a49;
+}
+.pl-c2::before {
+  content: "^M";
+}
+.pl-sr .pl-cce {
+  font-weight: bold;
+  color: #7bcc72;
+}
+.pl-mh,
+.pl-mh .pl-en,
+.pl-ms {
+  font-weight: bold;
+  color: #0366d6;
+}
+.pl-mi {
+  font-style: italic;
+  color: #f6f8fa;
+}
+.pl-mb {
+  font-weight: bold;
+  color: #f6f8fa;
+}
+.pl-md {
+  color: #b31d28;
+  background-color: #ffeef0;
+}
+.pl-mi1 {
+  color: #176f2c;
+  background-color: #f0fff4;
+}
+.pl-mc {
+  color: #b08800;
+  background-color: #fffdef;
+}
+.pl-mi2 {
+  color: #2f363d;
+  background-color: #959da5;
+}
+.pl-mdr {
+  font-weight: bold;
+  color: #b392f0;
+}
+.pl-mo {
+  color: #0366d6;
+}
+.pl-ba {
+  color: #ffeef0;
+}
+.pl-sg {
+  color: #6a737d;
+}
+.pl-corl {
+  text-decoration: underline;
+  color: #79b8ff;
+}
+
+/* Additional styles for better terminal appearance */
+#terminal::-webkit-scrollbar {
+  width: 12px;
+}
+
+#terminal::-webkit-scrollbar-track {
+  background: #1b1f23;
+}
+
+#terminal::-webkit-scrollbar-thumb {
+  background-color: #3f4448;
+  border-radius: 6px;
+  border: 3px solid #1b1f23;
+}
+
+/* Style for command inputs */
+.command-input {
+  color: #79b8ff;
+}
+
+/* Style for command outputs */
+.command-output {
+  color: #f6f8fa;
+}
+
+/* Style for errors */
+.error-message {
+  color: #ea4a5a;
+}
