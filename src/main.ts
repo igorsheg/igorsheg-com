@@ -1,20 +1,16 @@
-import { Terminal } from "./terminal";
-import "./style.css"
-import { OutputStream } from "./io";
-import { Shell } from "./shell";
+import { InputStream, OutputStream } from './io'
+import { Shell } from './shell'
+import { Terminal } from './terminal'
+import './style.css'
 
-const terminalElement = document.getElementById('terminal') as HTMLElement;
-const terminal = new Terminal(terminalElement);
+const terminalElement = document.getElementById('terminal') as HTMLElement
+const stdin = new InputStream()
+const stdout = new OutputStream()
+const stderr = new OutputStream()
 
-const stdout = new OutputStream();
-const stderr = new OutputStream();
+const terminal = new Terminal(terminalElement, stdin, stdout)
+const shell = new Shell(stdin, stdout, stderr)
 
-stdout.onWrite((data) => terminal.write(data));
-stderr.onWrite((data) => terminal.write(`<span style="color: red;">${data}</span>`));
+shell.run()
 
-const shell = new Shell(stdout, stderr);
-
-document.addEventListener('keydown', (event) => {
-  shell.handleInput(event.key);
-});
-
+document.addEventListener('load', () => terminal.focus())

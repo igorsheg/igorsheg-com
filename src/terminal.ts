@@ -1,55 +1,94 @@
+import type { InputStream, OutputStream } from './io'
+
 export class Terminal {
-  private element: HTMLElement;
-  private output: string[] = [];
+  private output: string[] = []
+  private currentInput: string = ''
+  private prompt: string = '$ '
 
-  constructor(element: HTMLElement) {
-    this.element = element;
-    this.render();
+  constructor(
+    private element: HTMLElement,
+    private stdin: InputStream,
+    private stdout: OutputStream,
+  ) {
+    this.setupEventListeners()
+    this.startReading()
+    this.render() // Initial render with prompt
   }
 
-  write(text: string): void {
+  public focus(): void {
+    this.element.focus()
+  }
 
-    if (text === '\b \b') {
-      // Handle backspace
-      if (this.output.length > 0) {
-        let lastLine = this.output[this.output.length - 1];
-        if (lastLine && (lastLine?.length ?? 0) > 0) {
-          this.output[this.output.length - 1] = lastLine.slice(0, -1);
-        } else if (this.output.length > 1) {
-          // If the last line is empty, remove it and trim the previous line
-          this.output.pop();
-          this.output[this.output.length - 1] = (this.output[this.output.length - 1] ?? "").slice(0, -1);
-        }
-      }
-    } else {
-      const lines = text.split('\n');
-      if (lines.length === 1) {
-        if (this.output.length === 0) {
-          this.output.push(lines[0] ?? "");
-        } else {
-          this.output[this.output.length - 1] += lines[0] ?? "";
-        }
-      } else {
-        if (this.output.length === 0) {
-          this.output = lines;
-        } else {
-          this.output[this.output.length - 1] += lines[0] ?? "";
-          this.output.push(...lines.slice(1));
-        }
-      }
+  private setupEventListeners(): void {
+    document.addEventListener('keydown', this.handleKeyDown.bind(this))
+  }
+
+  private handleKeyDown(event: KeyboardEvent): void {
+    event.preventDefault()
+
+    if (event.key === 'Enter') {
+      this.handleEnter()
     }
-    this.render();
+    else if (event.key === 'Backspace') {
+      this.handleBackspace()
+    }
+    else if (event.key.length === 1) {
+      this.handleCharacter(event.key)
+    }
+
+    this.render()
   }
 
-  clear(): void {
-    this.output = [];
-    this.render();
+  private handleEnter(): void {
+    this.output.push(this.prompt + this.currentInput)
+    this.stdin.write(`${this.currentInput}\n`)
+    this.currentInput = ''
+  }
+
+  private handleBackspace(): void {
+    if (this.currentInput.length > 0) {
+      this.currentInput = this.currentInput.slice(0, -1)
+    }
+  }
+
+  private handleCharacter(char: string): void {
+    this.currentInput += char
+  }
+
+  private startReading(): void {
+    this.stdout.onWrite((data) => {
+      if (data === '\x1B[2J\x1B[0f') {
+        this.clear()
+      }
+      else {
+        this.output.push(data.trim())
+      }
+      this.render()
+    })
   }
 
   private render(): void {
-    console.log(this.output)
-    this.element.innerHTML = this.output.join('<br>') + '<span class="cursor">█</span>';
-    this.element.scrollTop = this.element.scrollHeight;
+    const outputHtml = this.output.map(this.wrapLine.bind(this)).join('<br>')
+    const currentLineHtml = this.wrapLine(this.prompt + this.currentInput)
+
+    this.element.innerHTML = `${outputHtml
+      + (this.output.length > 0 ? '<br>' : '')
+      + currentLineHtml
+      }<span class="cursor">█</span>`
+
+    this.element.scrollTop = this.element.scrollHeight
+  }
+
+  private wrapLine(line: string): string {
+    if (line.startsWith(this.prompt)) {
+      return `<span class="prompt">${this.prompt}</span><span class="user-input">${line.slice(this.prompt.length)}</span>`
+    }
+    return `<span class="output">${line}</span>`
+  }
+
+  private clear(): void {
+    this.output = []
+    this.currentInput = ''
   }
 }
 
