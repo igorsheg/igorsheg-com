@@ -5,7 +5,7 @@ export class AboutCommand implements Command {
   name = 'about'
   description = 'Display information about the author'
 
-  execute(args: string[], stdout: OutputStream): void {
+  execute(_args: string[], stdout: OutputStream): void {
     const aboutText = `
 ╭────────────────────────────────────────────────────────────╮
 │░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒│

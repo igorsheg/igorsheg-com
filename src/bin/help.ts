@@ -8,7 +8,7 @@ export class HelpCommand implements Command {
 
   constructor(private commandRegistry: CommandRegistry) { }
 
-  execute(args: string[], stdout: OutputStream): void {
+  execute(_args: string[], stdout: OutputStream): void {
     stdout.write('Available commands:\n')
     this.commandRegistry.getCommands().forEach((command) => {
       stdout.write(`  ${command.name}: ${command.description}\n`)

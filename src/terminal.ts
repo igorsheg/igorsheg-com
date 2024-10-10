@@ -1,15 +1,18 @@
 import type { InputStream, OutputStream } from './io'
+import { TerminalEventHandler } from './event'
 
 export class Terminal {
   private output: string[] = []
   private currentInput: string = ''
   private prompt: string = '$ '
+  private eventHandler: TerminalEventHandler
 
   constructor(
     private element: HTMLElement,
     private stdin: InputStream,
     private stdout: OutputStream,
   ) {
+    this.eventHandler = new TerminalEventHandler(this)
     this.setupEventListeners()
     this.startReading()
     this.render() // Initial render with prompt
@@ -19,38 +22,38 @@ export class Terminal {
     this.element.focus()
   }
 
-  private setupEventListeners(): void {
-    document.addEventListener('keydown', this.handleKeyDown.bind(this))
+  public getCurrentInput(): string {
+    return this.currentInput
   }
 
-  private handleKeyDown(event: KeyboardEvent): void {
-    event.preventDefault()
-    if (event.key === 'Enter') {
-      this.handleEnter()
-    }
-    else if (event.key === 'Backspace') {
-      this.handleBackspace()
-    }
-    else if (event.key.length === 1) {
-      this.handleCharacter(event.key)
-    }
-    this.render()
+  public getPrompt(): string {
+    return this.prompt
   }
 
-  private handleEnter(): void {
-    this.output.push(this.wrapLine(this.prompt + this.currentInput))
-    this.stdin.write(`${this.currentInput}\n`)
+  public addToOutput(line: string): void {
+    this.output.push(this.wrapLine(line))
+  }
+
+  public sendInput(input: string): void {
+    this.stdin.write(`${input}\n`)
+  }
+
+  public clearCurrentInput(): void {
     this.currentInput = ''
   }
 
-  private handleBackspace(): void {
+  public backspace(): void {
     if (this.currentInput.length > 0) {
       this.currentInput = this.currentInput.slice(0, -1)
     }
   }
 
-  private handleCharacter(char: string): void {
+  public appendToInput(char: string): void {
     this.currentInput += char
+  }
+
+  private setupEventListeners(): void {
+    document.addEventListener('keydown', this.eventHandler.handleEvent.bind(this.eventHandler))
   }
 
   private startReading(): void {
@@ -70,7 +73,7 @@ export class Terminal {
     })
   }
 
-  private render(): void {
+  public render(): void {
     const outputHtml = this.output.join('')
     const currentLineHtml = this.wrapLine(this.prompt + this.currentInput, true)
     this.element.innerHTML = `<div class="terminal-output">${outputHtml}</div>
