@@ -105,7 +105,7 @@ export class Terminal {
       completionsHtml = `<div class="completions">${completions.map((completion, index) =>
         `<div class="${index === selectedIndex ? 'selected' : ''}">${this.escapeHtml(completion)}</div>`,
       ).join('')
-        }</div>`
+      }</div>`
     }
 
     this.element.innerHTML = `

@@ -26,10 +26,10 @@ const shell = new Shell(stdin, stdout, commandRegistry, fileSystem)
 const terminal = new Terminal(
   terminalElement,
   stdout,
-  (input: string) => {
+  (input) => {
     stdin.write(input)
   },
-  (line: string, direction: number): CompletionResult => shell.complete(line, direction),
+  (line, direction): CompletionResult => shell.complete(line, direction),
   () => shell.getPrompt(),
 )
 
