@@ -1,69 +1,86 @@
-import type { CommandRegistry } from './command'
-import type { InMemoryFileSystem } from './fs'
-import type { InputStream, OutputStream } from './io'
-import { TerminalEventHandler } from './event'
+import type { OutputStream } from './io'
+import type { CompletionFunction } from './shell'
 
 export class Terminal {
   private output: string[] = []
-  private currentInput: string = ''
-  private prompt: string = '$ '
-  private eventHandler: TerminalEventHandler
+  private buffer: string = ''
+  private currentPrompt: string = ''
 
   constructor(
     private element: HTMLElement,
-    private stdin: InputStream,
     private stdout: OutputStream,
-    private commandRegistry: CommandRegistry,
-    private fileSystem: InMemoryFileSystem,
+    private onInputCallback: (input: string) => void,
+    private completionFunction: CompletionFunction,
+    private getPromptCallback: () => string,
   ) {
-    this.eventHandler = new TerminalEventHandler(this, this.fileSystem, commandRegistry)
     this.setupEventListeners()
     this.startReading()
-    this.render() // Initial render with prompt
+    this.updatePrompt()
+    this.render()
   }
 
   public focus(): void {
     this.element.focus()
   }
 
-  public getCurrentInput(): string {
-    return this.currentInput
+  private setupEventListeners(): void {
+    this.element.addEventListener('keydown', this.handleKeyDown.bind(this))
   }
 
-  public setCurrentInput(input: string): void {
-    this.currentInput = input
-  }
-
-  public getPrompt(): string {
-    return this.prompt
-  }
-
-  public addToOutput(line: string): void {
-    this.output.push(this.wrapLine(line))
-  }
-
-  public sendInput(input: string): void {
-    this.stdin.write(`${input}\n`)
-  }
-
-  public clearCurrentInput(): void {
-    this.currentInput = ''
-  }
-
-  public backspace(): void {
-    if (this.currentInput.length > 0) {
-      this.currentInput = this.currentInput.slice(0, -1)
-      this.render() // Re-render to update command highlighting
+  private handleKeyDown(event: KeyboardEvent): void {
+    event.preventDefault()
+    switch (event.key) {
+      case 'Enter':
+        this.sendInput()
+        break
+      case 'Backspace':
+        this.backspace()
+        break
+      case 'Tab':
+        this.handleTabCompletion(0)
+        break
+      case 'ArrowUp':
+        this.handleTabCompletion(-1)
+        break
+      case 'ArrowDown':
+        this.handleTabCompletion(1)
+        break
+      default:
+        if (event.key.length === 1) {
+          this.appendToInput(event.key)
+        }
     }
   }
 
-  public appendToInput(char: string): void {
-    this.currentInput += char
-    this.render() // Re-render to update command highlighting
+  private handleTabCompletion(direction: number): void {
+    const { newLine, completions, selectedIndex } = this.completionFunction(this.buffer, direction)
+    this.buffer = newLine
+    this.render(completions, selectedIndex)
   }
 
-  private setupEventListeners(): void {
-    document.addEventListener('keydown', this.eventHandler.handleEvent.bind(this.eventHandler))
+  private sendInput(): void {
+    const input = this.buffer
+    this.output.push(this.currentPrompt + input)
+    this.onInputCallback(`${input}\n`)
+    this.buffer = ''
+    this.updatePrompt()
+    this.render()
+  }
+
+  private updatePrompt(): void {
+    this.currentPrompt = this.getPromptCallback()
+  }
+
+  private backspace(): void {
+    if (this.buffer.length > 0) {
+      this.buffer = this.buffer.slice(0, -1)
+      this.render()
+    }
+  }
+
+  private appendToInput(char: string): void {
+    this.buffer += char
+    this.render()
   }
 
   private startReading(): void {
@@ -72,37 +89,31 @@ export class Terminal {
         this.clear()
       }
       else {
-        // Split the data into lines and add each non-empty line to the output
         const lines = data.split('\n')
-        this.output.push(...lines
-          .filter(line => line.trim() !== '')
-          .map(line => this.wrapLine(line)),
-        )
+        this.output.push(...lines.filter(line => line.trim() !== ''))
       }
       this.render()
     })
   }
 
-  public render(): void {
-    const outputHtml = this.output.join('')
-    const currentLineHtml = this.wrapLine(this.prompt + this.currentInput, true)
-    this.element.innerHTML = `<div class="terminal-output">${outputHtml}</div>
-                              <div class="terminal-input">${currentLineHtml}</div>`
-    this.element.scrollTop = this.element.scrollHeight
-  }
+  private render(completions: string[] = [], selectedIndex: number = -1): void {
+    const outputHtml = this.output.map(line => `<div>${this.escapeHtml(line)}</div>`).join('')
+    const currentLineHtml = `<div>${this.escapeHtml(this.currentPrompt + this.buffer)}<span class="cursor">█</span></div>`
 
-  private wrapLine(line: string, isCurrent: boolean = false): string {
-    if (line.startsWith(this.prompt)) {
-      const promptSpan = `<span class="prompt">${this.prompt}</span>`
-      const inputContent = line.slice(this.prompt.length)
-      const [command] = inputContent.trim().split(/\s+/)
-      const inputClass = this.commandRegistry.commandExists(command) ? 'user-input command-input' : 'user-input'
-      const inputSpan = `<span class="${inputClass}">${this.escapeHtml(inputContent)}</span>`
-      return isCurrent
-        ? `${promptSpan}${inputSpan}<span class="cursor">█</span>`
-        : `${promptSpan}${inputSpan}\n`
+    let completionsHtml = ''
+    if (completions.length > 0) {
+      completionsHtml = `<div class="completions">${completions.map((completion, index) =>
+        `<div class="${index === selectedIndex ? 'selected' : ''}">${this.escapeHtml(completion)}</div>`,
+      ).join('')
+        }</div>`
     }
-    return `<span class="output">${this.escapeHtml(line)}</span>\n`
+
+    this.element.innerHTML = `
+      <div class="terminal-output">${outputHtml}</div>
+      <div class="terminal-input">${currentLineHtml}</div>
+      ${completionsHtml}
+    `
+    this.element.scrollTop = this.element.scrollHeight
   }
 
   private escapeHtml(unsafe: string): string {
@@ -116,6 +127,6 @@ export class Terminal {
 
   private clear(): void {
     this.output = []
-    this.currentInput = ''
+    this.buffer = ''
   }
 }

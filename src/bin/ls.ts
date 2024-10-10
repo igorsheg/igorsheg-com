@@ -18,4 +18,39 @@ export class LsCommand implements Command {
       }
     }
   }
+
+  complete(args: string[], fs: InMemoryFileSystem): string[] {
+    const partialPath = args[args.length - 1] || ''
+
+    const fullPath = fs.getAbsolutePath(partialPath)
+
+    try {
+      let items: string[]
+      let prefix: string
+
+      if (fs.isDirectory(fullPath)) {
+        items = fs.listDirectory(fullPath)
+        prefix = ''
+      }
+      else {
+        const parentDir = fs.getParentDirectory(fullPath)
+        items = fs.listDirectory(parentDir)
+        prefix = fullPath.split('/').pop() || ''
+      }
+
+      const completions = items
+        .filter(item => item.startsWith(prefix))
+        .map((item) => {
+          const completedPath = partialPath + item.slice(prefix.length)
+          const fullCompletedPath = fs.getAbsolutePath(completedPath)
+          return fs.isDirectory(fullCompletedPath) ? `${completedPath}/` : completedPath
+        })
+
+      return completions
+    }
+    catch (error) {
+      console.error('Error in ls completion:', error)
+      return []
+    }
+  }
 }

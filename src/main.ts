@@ -1,3 +1,4 @@
+import type { CompletionResult } from './shell'
 import { AboutCommand, CatCommand, CdCommand, HelpCommand, LsCommand, PwdCommand } from './bin'
 import { ContactCommand } from './bin/contact'
 import { CommandRegistry } from './command'
@@ -21,9 +22,15 @@ commandRegistry.registerCommand(new LsCommand())
 commandRegistry.registerCommand(new CatCommand())
 commandRegistry.registerCommand(new ContactCommand())
 
-const terminal = new Terminal(terminalElement, stdin, stdout, commandRegistry, fileSystem)
 const shell = new Shell(stdin, stdout, commandRegistry, fileSystem)
+const terminal = new Terminal(
+  terminalElement,
+  stdout,
+  (input: string) => {
+    stdin.write(input)
+  },
+  (line: string, direction: number): CompletionResult => shell.complete(line, direction),
+  () => shell.getPrompt(),
+)
 
-shell.run()
-
-document.addEventListener('load', () => terminal.focus())
+terminal.focus()

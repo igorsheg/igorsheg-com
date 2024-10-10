@@ -71,8 +71,9 @@ export class InMemoryFileSystem {
       }
       else if (part !== '.') {
         const child = current.children!.get(part)
-        if (!child)
+        if (!child) {
           return null
+        }
         current = child
       }
     }
@@ -121,6 +122,33 @@ export class InMemoryFileSystem {
     return Array.from(node.children!.keys())
   }
 
+  joinPaths(...paths: string[]): string {
+    return paths.reduce((joined, part) => {
+      if (!joined)
+        return part
+      if (!part)
+        return joined
+
+      const joinedEndsWithSlash = joined.endsWith('/')
+      const partStartsWithSlash = part.startsWith('/')
+
+      if (joinedEndsWithSlash && partStartsWithSlash) {
+        return joined + part.slice(1)
+      }
+      else if (!joinedEndsWithSlash && !partStartsWithSlash) {
+        return `${joined}/${part}`
+      }
+      else {
+        return joined + part
+      }
+    }, '')
+  }
+
+  getParentDirectory(path: string): string {
+    const parts = path.split('/').filter(p => p !== '')
+    return `/${parts.slice(0, -1).join('/')}`
+  }
+
   isDirectory(path: string): boolean {
     const node = this.resolvePath(path)
     return node ? node.isDirectory : false
@@ -133,29 +161,5 @@ export class InMemoryFileSystem {
 
   exists(path: string): boolean {
     return this.resolvePath(path) !== null
-  }
-
-  getSuggestions(partialPath: string, _options: { filesOnly?: boolean, directoriesOnly?: boolean } = {}): string[] {
-    const { dir, base } = this.splitPath(partialPath)
-    const dirNode = this.resolvePath(dir)
-
-    if (!dirNode || !dirNode.isDirectory) {
-      return []
-    }
-
-    return Array.from(dirNode.children!.keys())
-      .filter(name => name.startsWith(base))
-      .map(name => this.joinPaths(dir, name))
-  }
-
-  private splitPath(path: string): { dir: string, base: string } {
-    const parts = path.split('/')
-    const base = parts.pop() || ''
-    const dir = parts.join('/') || '/'
-    return { dir, base }
-  }
-
-  private joinPaths(...paths: string[]): string {
-    return paths.join('/').replace(/\/+/g, '/')
   }
 }

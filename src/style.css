@@ -48,10 +48,6 @@ body {
   color: #0f0;
 }
 
-.user-input {
-  color: #fff;
-}
-
 @keyframes blink {
   50% {
     opacity: 0;
@@ -125,4 +121,13 @@ body {
 
 .error-message {
   color: #f85149;
+}
+
+.completions {
+  color: #fff;
+  padding: 5px;
+}
+
+.completions .selected {
+  color: #58a6ff;
 }
