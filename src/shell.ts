@@ -8,7 +8,6 @@ export class Shell {
   constructor(
     private stdin: InputStream,
     private stdout: OutputStream,
-    private stderr: OutputStream,
   ) {
     this.commandRegistry = new CommandRegistry()
     this.registerCommands()
