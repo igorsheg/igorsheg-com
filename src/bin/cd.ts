@@ -1,5 +1,4 @@
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
+import type { InMemoryFileSystem, InputStream, OutputStream } from '../lib'
 import type { Command } from './types'
 
 export class CdCommand implements Command {

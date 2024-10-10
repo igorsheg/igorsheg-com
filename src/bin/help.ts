@@ -1,6 +1,4 @@
-import type { CommandRegistry } from '../command'
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
+import type { CommandRegistry, InMemoryFileSystem, InputStream, OutputStream } from '../lib'
 import type { Command } from './types'
 
 export class HelpCommand implements Command {

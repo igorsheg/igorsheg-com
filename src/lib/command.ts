@@ -1,4 +1,4 @@
-import type { Command } from './bin/types'
+import type { Command } from '../bin'
 import type { InMemoryFileSystem } from './fs'
 import type { InputStream, OutputStream } from './io'
 
