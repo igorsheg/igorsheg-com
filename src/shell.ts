@@ -1,4 +1,5 @@
 import type { CommandRegistry } from './command'
+import type { InMemoryFileSystem } from './fs'
 import type { InputStream, OutputStream } from './io'
 
 export class Shell {
@@ -6,6 +7,7 @@ export class Shell {
     private stdin: InputStream,
     private stdout: OutputStream,
     private commandRegistry: CommandRegistry,
+    private fileSystem: InMemoryFileSystem,
   ) { }
 
   run(): void {
@@ -18,7 +20,7 @@ export class Shell {
       this.stdout.write('\x1B[2J\x1B[0f')
     }
     else if (command !== '') {
-      this.commandRegistry.executeCommand(command, args, this.stdout)
+      this.commandRegistry.executeCommand(command, args, this.fileSystem, this.stdin, this.stdout)
     }
   }
 }

@@ -1,3 +1,7 @@
 export * from './about'
+export * from './cat'
+export * from './cd'
 export * from './help'
+export * from './ls'
+export * from './pwd'
 export * from './types'

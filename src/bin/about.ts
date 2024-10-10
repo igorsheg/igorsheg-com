@@ -1,11 +1,12 @@
-import type { OutputStream } from '../io'
+import type { InMemoryFileSystem } from '../fs'
+import type { InputStream, OutputStream } from '../io'
 import type { Command } from './types'
 
 export class AboutCommand implements Command {
   name = 'about'
   description = 'Display information about the author'
 
-  execute(_args: string[], stdout: OutputStream): void {
+  execute(_args: string[], _fs: InMemoryFileSystem, _stdin: InputStream, stdout: OutputStream): void {
     const aboutText = `
 ╭────────────────────────────────────────────────────────────╮
 │░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒░▒▓█▓▒│

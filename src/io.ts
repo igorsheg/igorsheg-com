@@ -43,4 +43,3 @@ export class OutputStream implements Stream {
     this.callbacks.push(callback)
   }
 }
-
