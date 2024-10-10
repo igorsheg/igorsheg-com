@@ -54,4 +54,3 @@ export class CatCommand implements Command {
     }
   }
 }
-

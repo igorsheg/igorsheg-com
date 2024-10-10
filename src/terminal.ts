@@ -97,17 +97,15 @@ export class Terminal {
   }
 
   private render(completions: string[] = [], selectedIndex: number = -1): void {
-    const outputHtml = this.output.map(line => `<div>${this.escapeHtml(line)}</div>`).join('')
-    const currentLineHtml = `<div>${this.escapeHtml(this.currentPrompt + this.buffer)}<span class="cursor">█</span></div>`
-
+    const outputHtml = this.output.map(line => `<div class="command-output">${this.escapeHtml(line)}</div>`).join('')
+    const currentLineHtml = `<div class="command-input">${this.escapeHtml(this.currentPrompt)}<span class="user-input">${this.escapeHtml(this.buffer)}</span><span class="cursor">█</span></div>`
     let completionsHtml = ''
     if (completions.length > 0) {
       completionsHtml = `<div class="completions">${completions.map((completion, index) =>
         `<div class="${index === selectedIndex ? 'selected' : ''}">${this.escapeHtml(completion)}</div>`,
       ).join('')
-      }</div>`
+        }</div>`
     }
-
     this.element.innerHTML = `
       <div class="terminal-output">${outputHtml}</div>
       <div class="terminal-input">${currentLineHtml}</div>

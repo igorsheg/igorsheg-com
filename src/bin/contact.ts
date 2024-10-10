@@ -31,4 +31,13 @@ export class ContactCommand implements Command {
       stdout.write('Available methods: web, git, tweet, mail\n')
     }
   }
+
+  complete(args: string[], _fs: InMemoryFileSystem): string[] {
+    const partialMethod = args[args.length - 1] || ''
+    const availableMethods = Object.keys(CONTACT_URLS)
+
+    return availableMethods.filter(method =>
+      method.startsWith(partialMethod.toLowerCase()),
+    )
+  }
 }

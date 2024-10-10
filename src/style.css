@@ -124,13 +124,16 @@ canvas {
   animation: blink 1s steps(2, start) infinite;
 }
 
-/* Command styles */
 .command-input {
-  color: #58a6ff;
+  color: #fff; /* White color for user input as they type */
 }
 
 .command-output {
-  color: #c9d1d9;
+  color: #c9d1d9; /* White color for submitted command output */
+}
+
+.user-input {
+  color: #fff; /* Ensure user input is white */
 }
 
 .error-message {
