@@ -1,3 +1,4 @@
+import type { CommandRegistry } from './command'
 import type { InputStream, OutputStream } from './io'
 import { TerminalEventHandler } from './event'
 
@@ -11,6 +12,7 @@ export class Terminal {
     private element: HTMLElement,
     private stdin: InputStream,
     private stdout: OutputStream,
+    private commandRegistry: CommandRegistry,
   ) {
     this.eventHandler = new TerminalEventHandler(this)
     this.setupEventListeners()
@@ -45,11 +47,13 @@ export class Terminal {
   public backspace(): void {
     if (this.currentInput.length > 0) {
       this.currentInput = this.currentInput.slice(0, -1)
+      this.render() // Re-render to update command highlighting
     }
   }
 
   public appendToInput(char: string): void {
     this.currentInput += char
+    this.render() // Re-render to update command highlighting
   }
 
   private setupEventListeners(): void {
@@ -84,7 +88,10 @@ export class Terminal {
   private wrapLine(line: string, isCurrent: boolean = false): string {
     if (line.startsWith(this.prompt)) {
       const promptSpan = `<span class="prompt">${this.prompt}</span>`
-      const inputSpan = `<span class="user-input">${this.escapeHtml(line.slice(this.prompt.length))}</span>`
+      const inputContent = line.slice(this.prompt.length)
+      const [command] = inputContent.trim().split(/\s+/)
+      const inputClass = this.commandRegistry.commandExists(command) ? 'user-input command-input' : 'user-input'
+      const inputSpan = `<span class="${inputClass}">${this.escapeHtml(inputContent)}</span>`
       return isCurrent
         ? `${promptSpan}${inputSpan}<span class="cursor">█</span>`
         : `${promptSpan}${inputSpan}\n`

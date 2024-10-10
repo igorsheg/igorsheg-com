@@ -22,7 +22,7 @@ export class TerminalEventHandler {
 
   private handleEnter(): void {
     const currentInput = this.terminal.getCurrentInput()
-    this.terminal.addToOutput(this.terminal.getPrompt() + currentInput)
+    // this.terminal.addToOutput(this.terminal.getPrompt() + currentInput)
     this.terminal.sendInput(currentInput)
     this.terminal.clearCurrentInput()
   }

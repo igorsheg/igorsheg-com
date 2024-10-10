@@ -1,22 +1,12 @@
+import type { CommandRegistry } from './command'
 import type { InputStream, OutputStream } from './io'
-import { AboutCommand, HelpCommand } from './bin'
-import { CommandRegistry } from './command'
 
 export class Shell {
-  private commandRegistry: CommandRegistry
-
   constructor(
     private stdin: InputStream,
     private stdout: OutputStream,
-  ) {
-    this.commandRegistry = new CommandRegistry()
-    this.registerCommands()
-  }
-
-  private registerCommands(): void {
-    this.commandRegistry.registerCommand(new HelpCommand(this.commandRegistry))
-    this.commandRegistry.registerCommand(new AboutCommand())
-  }
+    private commandRegistry: CommandRegistry,
+  ) { }
 
   run(): void {
     this.stdin.onData(this.handleInput.bind(this))

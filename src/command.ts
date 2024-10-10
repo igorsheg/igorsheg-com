@@ -14,8 +14,12 @@ export class CommandRegistry {
       command.execute(args, stdout)
     }
     else {
-      stdout.write(`Unknown command: ${name}\n`)
+      stdout.write(`Command not found: ${name}\n`)
     }
+  }
+
+  commandExists(name: string): boolean {
+    return this.commands.has(name)
   }
 
   getCommands(): Command[] {
