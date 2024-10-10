@@ -25,7 +25,6 @@ export class Terminal {
 
   private handleKeyDown(event: KeyboardEvent): void {
     event.preventDefault()
-
     if (event.key === 'Enter') {
       this.handleEnter()
     }
@@ -35,12 +34,11 @@ export class Terminal {
     else if (event.key.length === 1) {
       this.handleCharacter(event.key)
     }
-
     this.render()
   }
 
   private handleEnter(): void {
-    this.output.push(this.prompt + this.currentInput)
+    this.output.push(this.wrapLine(this.prompt + this.currentInput))
     this.stdin.write(`${this.currentInput}\n`)
     this.currentInput = ''
   }
@@ -61,29 +59,43 @@ export class Terminal {
         this.clear()
       }
       else {
-        this.output.push(data.trim())
+        // Split the data into lines and add each non-empty line to the output
+        const lines = data.split('\n')
+        this.output.push(...lines
+          .filter(line => line.trim() !== '')
+          .map(line => this.wrapLine(line)),
+        )
       }
       this.render()
     })
   }
 
   private render(): void {
-    const outputHtml = this.output.map(this.wrapLine.bind(this)).join('<br>')
-    const currentLineHtml = this.wrapLine(this.prompt + this.currentInput)
-
-    this.element.innerHTML = `${outputHtml
-    + (this.output.length > 0 ? '<br>' : '')
-    + currentLineHtml
-    }<span class="cursor">█</span>`
-
+    const outputHtml = this.output.join('')
+    const currentLineHtml = this.wrapLine(this.prompt + this.currentInput, true)
+    this.element.innerHTML = `<div class="terminal-output">${outputHtml}</div>
+                              <div class="terminal-input">${currentLineHtml}</div>`
     this.element.scrollTop = this.element.scrollHeight
   }
 
-  private wrapLine(line: string): string {
+  private wrapLine(line: string, isCurrent: boolean = false): string {
     if (line.startsWith(this.prompt)) {
-      return `<span class="prompt">${this.prompt}</span><span class="user-input">${line.slice(this.prompt.length)}</span>`
+      const promptSpan = `<span class="prompt">${this.prompt}</span>`
+      const inputSpan = `<span class="user-input">${this.escapeHtml(line.slice(this.prompt.length))}</span>`
+      return isCurrent
+        ? `${promptSpan}${inputSpan}<span class="cursor">█</span>`
+        : `${promptSpan}${inputSpan}\n`
     }
-    return `<span class="output">${line}</span>`
+    return `<span class="output">${this.escapeHtml(line)}</span>\n`
+  }
+
+  private escapeHtml(unsafe: string): string {
+    return unsafe
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
   }
 
   private clear(): void {

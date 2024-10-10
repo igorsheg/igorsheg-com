@@ -13,4 +13,7 @@ const shell = new Shell(stdin, stdout, stderr)
 
 shell.run()
 
+stdin.onData(data => console.log('stdin', data))
+stdout.onWrite(data => console.log('stdout', data))
+
 document.addEventListener('load', () => terminal.focus())
