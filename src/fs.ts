@@ -134,4 +134,28 @@ export class InMemoryFileSystem {
   exists(path: string): boolean {
     return this.resolvePath(path) !== null
   }
+
+  getSuggestions(partialPath: string, _options: { filesOnly?: boolean, directoriesOnly?: boolean } = {}): string[] {
+    const { dir, base } = this.splitPath(partialPath)
+    const dirNode = this.resolvePath(dir)
+
+    if (!dirNode || !dirNode.isDirectory) {
+      return []
+    }
+
+    return Array.from(dirNode.children!.keys())
+      .filter(name => name.startsWith(base))
+      .map(name => this.joinPaths(dir, name))
+  }
+
+  private splitPath(path: string): { dir: string, base: string } {
+    const parts = path.split('/')
+    const base = parts.pop() || ''
+    const dir = parts.join('/') || '/'
+    return { dir, base }
+  }
+
+  private joinPaths(...paths: string[]): string {
+    return paths.join('/').replace(/\/+/g, '/')
+  }
 }

@@ -1,4 +1,5 @@
 import type { CommandRegistry } from './command'
+import type { InMemoryFileSystem } from './fs'
 import type { InputStream, OutputStream } from './io'
 import { TerminalEventHandler } from './event'
 
@@ -13,8 +14,9 @@ export class Terminal {
     private stdin: InputStream,
     private stdout: OutputStream,
     private commandRegistry: CommandRegistry,
+    private fileSystem: InMemoryFileSystem,
   ) {
-    this.eventHandler = new TerminalEventHandler(this)
+    this.eventHandler = new TerminalEventHandler(this, this.fileSystem, commandRegistry)
     this.setupEventListeners()
     this.startReading()
     this.render() // Initial render with prompt
@@ -26,6 +28,10 @@ export class Terminal {
 
   public getCurrentInput(): string {
     return this.currentInput
+  }
+
+  public setCurrentInput(input: string): void {
+    this.currentInput = input
   }
 
   public getPrompt(): string {

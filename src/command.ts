@@ -26,4 +26,12 @@ export class CommandRegistry {
   getCommands(): Command[] {
     return Array.from(this.commands.values())
   }
+
+  getCommand(name: string): Command | undefined {
+    return this.commands.get(name)
+  }
+
+  getCommandNames(): string[] {
+    return Array.from(this.commands.keys())
+  }
 }

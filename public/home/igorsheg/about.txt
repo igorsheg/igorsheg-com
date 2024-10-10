@@ -1,0 +1,18 @@
+┌────────────────────────────────────────────────────────────┐
+│                    IGOR SHEGOLEV                           │
+│                   Software Engineer                        │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  [WEB]    https://igorsheg.com                             │
+│  [GIT]    https://github.com/igorsheg                      │
+│  [TWEET]  https://twitter.com/igorsheg                     │
+│  [MAIL]   igorsheg@gmail.com                               │
+│                                                            │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  Type 'contact <method>' to quickly copy contact info.     │
+│  Example: 'contact web' will copy the website URL.         │
+│                                                            │
+│  Available methods: web, git, tweet, mail                  │
+│                                                            │
+└────────────────────────────────────────────────────────────┘

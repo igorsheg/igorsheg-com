@@ -1,8 +1,9 @@
 {
   "home": {
     "igorsheg": {
+      "about.txt": "/home/igorsheg/about.txt",
       "projects": {
-        "test.txt": "/home/igorsheg/projects/test.txt"
+        "igorsheg-com.txt": "/home/igorsheg/projects/igorsheg-com.txt"
       }
     }
   }

@@ -23,4 +23,23 @@ export class Shell {
       this.commandRegistry.executeCommand(command, args, this.fileSystem, this.stdin, this.stdout)
     }
   }
+
+  completeInput(input: string): string[] {
+    const tokens = input.trim().split(/\s+/)
+    const commandName = tokens[0]
+    const args = tokens.slice(1)
+
+    // If command exists and has a complete method, use it
+    const command = this.commandRegistry.getCommand(commandName)
+
+    if (command && command.complete) {
+      return command.complete(args, this.fileSystem)
+    }
+    else if (tokens.length === 1) {
+      // Provide command name completions
+      return this.commandRegistry.getCommandNames().filter(name => name.startsWith(commandName))
+    }
+
+    return []
+  }
 }

@@ -21,4 +21,9 @@ export class CdCommand implements Command {
       }
     }
   }
+
+  complete(args: string[], fs: InMemoryFileSystem): string[] {
+    const partialPath = args[args.length - 1] || ''
+    return fs.getSuggestions(partialPath, { directoriesOnly: true })
+  }
 }

@@ -1,4 +1,5 @@
 import { AboutCommand, CatCommand, CdCommand, HelpCommand, LsCommand, PwdCommand } from './bin'
+import { ContactCommand } from './bin/contact'
 import { CommandRegistry } from './command'
 import { InMemoryFileSystem } from './fs'
 import { InputStream, OutputStream } from './io'
@@ -18,8 +19,9 @@ commandRegistry.registerCommand(new CdCommand())
 commandRegistry.registerCommand(new PwdCommand())
 commandRegistry.registerCommand(new LsCommand())
 commandRegistry.registerCommand(new CatCommand())
+commandRegistry.registerCommand(new ContactCommand())
 
-const terminal = new Terminal(terminalElement, stdin, stdout, commandRegistry)
+const terminal = new Terminal(terminalElement, stdin, stdout, commandRegistry, fileSystem)
 const shell = new Shell(stdin, stdout, commandRegistry, fileSystem)
 
 shell.run()
