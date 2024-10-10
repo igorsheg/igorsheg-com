@@ -2,29 +2,35 @@ interface Stream {
   read: () => string | null
   write: (data: string) => void
 }
-
 export class InputStream implements Stream {
   private buffer: string = ''
+  private dataHandlers: ((data: string) => void)[] = []
+  write(data: string): void {
+    this.buffer += data
+    if (data.includes('\n')) {
+      const lines = this.buffer.split('\n')
+      this.buffer = lines.pop() || ''
+      lines.forEach((line) => {
+        this.dataHandlers.forEach(handler => handler(line))
+      })
+    }
+  }
 
   read(): string | null {
     if (this.buffer.length === 0)
       return null
     const char = this.buffer[0]
     this.buffer = this.buffer.slice(1)
-    if (char) {
-      return char
-    }
-    return null
+    return char
   }
 
-  write(data: string): void {
-    this.buffer += data
+  onData(handler: (data: string) => void): void {
+    this.dataHandlers.push(handler)
   }
 }
 
 export class OutputStream implements Stream {
   private callbacks: ((data: string) => void)[] = []
-
   read(): string | null {
     return null
   }
@@ -37,3 +43,4 @@ export class OutputStream implements Stream {
     this.callbacks.push(callback)
   }
 }
+

@@ -72,9 +72,9 @@ export class Terminal {
     const currentLineHtml = this.wrapLine(this.prompt + this.currentInput)
 
     this.element.innerHTML = `${outputHtml
-      + (this.output.length > 0 ? '<br>' : '')
-      + currentLineHtml
-      }<span class="cursor">█</span>`
+    + (this.output.length > 0 ? '<br>' : '')
+    + currentLineHtml
+    }<span class="cursor">█</span>`
 
     this.element.scrollTop = this.element.scrollHeight
   }
@@ -91,4 +91,3 @@ export class Terminal {
     this.currentInput = ''
   }
 }
-

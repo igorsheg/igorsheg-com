@@ -1,44 +1,23 @@
 import type { InputStream, OutputStream } from './io'
 
 export class Shell {
-  private stdin: InputStream
-  private stdout: OutputStream
-  private stderr: OutputStream
-
-  constructor(stdin: InputStream, stdout: OutputStream, stderr: OutputStream) {
-    this.stdin = stdin
-    this.stdout = stdout
-    this.stderr = stderr
-  }
+  constructor(
+    private stdin: InputStream,
+    private stdout: OutputStream,
+    private stderr: OutputStream,
+  ) { }
 
   run(): void {
-    this.readAndExecute()
+    this.stdin.onData(this.handleInput.bind(this))
   }
 
-  private readAndExecute(): void {
-    let input = ''
-    let char = this.stdin.read()
-    while (char !== null) {
-      if (char === '\n') {
-        this.executeCommand(input)
-        input = ''
-      }
-      else {
-        input += char
-      }
-      char = this.stdin.read()
-    }
-    // Continue reading in the next event loop iteration
-    setTimeout(() => this.readAndExecute(), 0)
-  }
-
-  private executeCommand(command: string): void {
-    if (command.trim() === 'clear') {
+  private handleInput(input: string): void {
+    const command = input.trim()
+    if (command === 'clear') {
       this.stdout.write('\x1B[2J\x1B[0f')
     }
-    else if (command.trim() !== '') {
+    else if (command !== '') {
       this.stdout.write(`Executed: ${command}\n`)
     }
   }
 }
-
