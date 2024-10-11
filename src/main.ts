@@ -35,6 +35,7 @@ const terminal = new Terminal(
   },
   (line, direction): CompletionResult => shell.complete(line, direction),
   () => shell.getPrompt(),
+  (input: string) => shell.isValidCommand(input),
 )
 
 terminal.focus()

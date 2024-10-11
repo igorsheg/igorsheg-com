@@ -5,6 +5,7 @@ export class Terminal {
   private output: string[] = []
   private buffer: string = ''
   private currentPrompt: string = ''
+  private isValidCommand: (input: string) => boolean
 
   constructor(
     private element: HTMLElement,
@@ -12,10 +13,12 @@ export class Terminal {
     private onInputCallback: (input: string) => void,
     private completionFunction: CompletionFunction,
     private getPromptCallback: () => string,
+    isValidCommandCallback: (input: string) => boolean,
   ) {
     this.setupEventListeners()
     this.startReading()
     this.updatePrompt()
+    this.isValidCommand = isValidCommandCallback
     this.render()
   }
 
@@ -111,13 +114,19 @@ export class Terminal {
 
   private render(completions: string[] = [], selectedIndex: number = -1): void {
     const outputHtml = this.output.map(line => `<div class="command-output">${this.escapeHtml(line)}</div>`).join('')
-    const currentLineHtml = `<div class="command-input">${this.escapeHtml(this.currentPrompt)}<span class="user-input">${this.escapeHtml(this.buffer)}</span><span class="cursor">█</span></div>`
+
+    const [commandName] = this.buffer.split(/\s+/)
+    const isValid = this.isValidCommand(commandName)
+    const commandClass = isValid ? 'valid-command' : ''
+
+    const currentLineHtml = `<div class="command-input">${this.escapeHtml(this.currentPrompt)}<span class="user-input ${commandClass}">${this.escapeHtml(this.buffer)}</span><span class="cursor">█</span></div>`
     let completionsHtml = ''
     if (completions.length > 0) {
-      completionsHtml = `<div class="completions">${completions.map((completion, index) =>
+      completionsHtml = `
+        <div class="completions">${completions.map((completion, index) =>
         `<div class="${index === selectedIndex ? 'selected' : ''}">${this.escapeHtml(completion)}</div>`,
       ).join('')
-      }</div>`
+        }</div>`
     }
     this.element.innerHTML = `
       <div class="terminal-output">${outputHtml}</div>

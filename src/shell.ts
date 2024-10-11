@@ -140,4 +140,9 @@ export class Shell {
   setPrompt(newPrompt: string): void {
     this.prompt = newPrompt
   }
+
+  isValidCommand(input: string): boolean {
+    const [commandName] = input.trim().split(/\s+/)
+    return this.commandRegistry.getCommand(commandName) !== undefined
+  }
 }

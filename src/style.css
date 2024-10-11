@@ -136,6 +136,10 @@ canvas {
   color: #fff; /* Ensure user input is white */
 }
 
+.user-input.valid-command {
+  color: #58a6ff;
+}
+
 .error-message {
   color: #f85149;
 }
