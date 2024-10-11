@@ -1,3 +1,5 @@
+import type { INode } from '../fs'
+import type { OutputStream } from '../io'
 import type { Command, CommandArgs } from './types'
 
 export class LsCommand implements Command {
@@ -6,20 +8,73 @@ export class LsCommand implements Command {
   isBuiltin = true as const
 
   execute({ args, fs, shellState, stdout }: CommandArgs): void {
-    const path = args.length > 0 ? shellState.resolveAbsolutePath(args[0]) : shellState.getCwd()
-    const stat = fs.stat(path)
+    let showHidden = false
+    let longFormat = false
+    let targetPath = shellState.getCwd()
+
+    // Parse flags and path
+    args.forEach((arg) => {
+      if (arg.startsWith('-')) {
+        if (arg.includes('a'))
+          showHidden = true
+        if (arg.includes('l'))
+          longFormat = true
+      }
+      else {
+        targetPath = shellState.resolveAbsolutePath(arg)
+      }
+    })
+
+    const stat = fs.stat(targetPath)
     if (!stat) {
-      stdout.write(`ls: cannot access '${args[0]}': No such file or directory\n`)
+      stdout.write(`ls: cannot access '${targetPath}': No such file or directory\n`)
       return
     }
+
     if (stat.type === 'file') {
-      stdout.write(`${path.split('/').pop()}\n`)
+      this.displayFileInfo(stdout, targetPath.split('/').pop() || '', stat, longFormat)
       return
     }
-    const contents = fs.ls(path)
+
+    let contents = fs.ls(targetPath)
     if (contents) {
-      stdout.write(`${contents.join('\n')}\n`)
+      if (!showHidden) {
+        contents = contents.filter(item => !item.startsWith('.'))
+      }
+
+      if (longFormat) {
+        contents.forEach((item) => {
+          const itemPath = `${targetPath}/${item}`
+          const itemStat = fs.stat(itemPath)
+          if (itemStat) {
+            this.displayFileInfo(stdout, item, itemStat, longFormat)
+          }
+        })
+      }
+      else {
+        stdout.write(`${contents.join('\n')}\n`)
+      }
     }
+  }
+
+  private displayFileInfo(stdout: OutputStream, name: string, stat: INode, longFormat: boolean): void {
+    if (longFormat) {
+      const type = stat.type === 'dir' ? 'd' : '-'
+      const date = this.formatDate(stat.metadata.dateCreated)
+      stdout.write(`${type}rw-r--r-- 1 igorsheg wheel 4096 ${date} ${name}${stat.type === 'dir' ? '/' : ''}\n`)
+    }
+    else {
+      stdout.write(`${name}${stat.type === 'dir' ? '/' : ''}\n`)
+    }
+  }
+
+  private formatDate(date: Date): string {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    const month = months[date.getMonth()]
+    const day = date.getDate().toString().padStart(2, '0')
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${month} ${day} ${hours}:${minutes}`
   }
 
   complete({ args, fs, shellState }: CommandArgs): string[] {
@@ -51,3 +106,4 @@ export class LsCommand implements Command {
     }
   }
 }
+

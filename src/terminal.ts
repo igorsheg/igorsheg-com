@@ -30,9 +30,9 @@ export class Terminal {
   private handleKeyDown(event: KeyboardEvent): void {
     event.preventDefault()
 
-    if (event.ctrlKey && event.key === 'c') {
+    if (event.ctrlKey && event.key === 'l') {
       event.preventDefault()
-      this.handleCtrlC()
+      this.handleCtrlL()
       return
     }
     switch (event.key) {
@@ -77,7 +77,7 @@ export class Terminal {
     this.currentPrompt = this.getPromptCallback()
   }
 
-  private handleCtrlC(): void {
+  private handleCtrlL(): void {
     this.output.push(`${this.currentPrompt + this.buffer}^C`)
     this.clear()
     this.updatePrompt()
@@ -117,7 +117,7 @@ export class Terminal {
       completionsHtml = `<div class="completions">${completions.map((completion, index) =>
         `<div class="${index === selectedIndex ? 'selected' : ''}">${this.escapeHtml(completion)}</div>`,
       ).join('')
-        }</div>`
+      }</div>`
     }
     this.element.innerHTML = `
       <div class="terminal-output">${outputHtml}</div>

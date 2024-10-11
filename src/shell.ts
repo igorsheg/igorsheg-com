@@ -26,41 +26,14 @@ export class Shell {
     this.stdin.onData(this.handleInput.bind(this))
   }
 
-  // private get context(): CommandContext {
-  //   return {
-  //     cwd: this.currentDirectory,
-  //     dirHistory: this.dirHistory,
-  //     resolvePath: this.resolveAbsolutePath.bind(this),
-  //     updateCwd: this.updateCwd.bind(this),
-  //     addToHistory: this.addToHistory.bind(this),
-  //   }
-  // }
-
-  // handleInput(input: string): void {
-  //   const trimmedInput = input.trim()
-  //   const [commandName, ...args] = trimmedInput.split(/\s+/)
-  //   if (commandName === 'clear') {
-  //     this.stdout.write('\x1B[2J\x1B[0f')
-  //   }
-  //   else if (commandName !== '') {
-  //     try {
-  //       const command = this.commandRegistry.getCommand(commandName)
-  //       if (command) {
-  //         command.execute({ args, ctx: this.context, fs: this.fs, stdin: this.stdin, stdout: this.stdout })
-  //       }
-  //       else {
-  //         this.stdout.write(`Command not found: ${commandName}\n`)
-  //       }
-  //     }
-  //     catch (error) {
-  //       this.stdout.write(`Error: ${(error as Error).message}\n`)
-  //     }
-  //   }
-  //   this.resetCompletions()
-  // }
-
   handleInput(input: string): void {
     const [commandName, ...args] = input.trim().split(/\s+/)
+
+    if (commandName === 'clear') {
+      this.stdout.write('\x1B[2J\x1B[0f')
+      return
+    }
+
     if (commandName === '')
       return
 
@@ -77,33 +50,9 @@ export class Shell {
     else {
       this.stdout.write(`Command not found: ${commandName}\n`)
     }
+    this.state.addToHistory(commandName)
     this.resetCompletions()
   }
-
-  // private updateCwd(newCwd: string): void {
-  //   this.currentDirectory = newCwd
-  // }
-  //
-  // private addToHistory(path: string): void {
-  //   this.dirHistory.push(path)
-  // }
-  //
-  // private resolveAbsolutePath(path: string): string {
-  //   if (path.startsWith('/')) {
-  //     return path
-  //   }
-  //   const parts = [...this.currentDirectory.split('/').filter(Boolean), ...path.split('/').filter(Boolean)]
-  //   const resolvedParts: string[] = []
-  //   for (const part of parts) {
-  //     if (part === '..') {
-  //       resolvedParts.pop()
-  //     }
-  //     else if (part !== '.') {
-  //       resolvedParts.push(part)
-  //     }
-  //   }
-  //   return `/${resolvedParts.join('/')}`
-  // }
 
   complete(line: string, direction: number = 0): CompletionResult {
     const [partialCommand, ...args] = line.split(/\s+/)

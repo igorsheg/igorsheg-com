@@ -19,14 +19,20 @@ export class DataBlock {
   }
 }
 
+export type INodeMetadata = {
+  dateCreated: Date
+}
+
 export type DirINode = {
   type: 'dir'
   children: Map<string, INode>
+  metadata: INodeMetadata
 }
 
 export type FileINode = {
   type: 'file'
   content: DataBlock | string
+  metadata: INodeMetadata
 }
 
 export type INode = FileINode | DirINode
@@ -35,7 +41,7 @@ export class VirtualFileSystem {
   root: DirINode
 
   constructor(tree?: DirINode) {
-    this.root = tree ?? { type: 'dir', children: new Map() }
+    this.root = tree ?? { type: 'dir', children: new Map(), metadata: { dateCreated: new Date() } }
   }
 
   stat(path: string): INode | null {
@@ -70,7 +76,7 @@ export class VirtualFileSystem {
           return false
         }
         // Create the missing directory
-        const newDir: DirINode = { type: 'dir', children: new Map() }
+        const newDir: DirINode = { type: 'dir', children: new Map(), metadata: { dateCreated: new Date() } }
         current.children.set(part, newDir)
         current = newDir
       }
@@ -113,6 +119,7 @@ export class VirtualFileSystem {
     const newFile: FileINode = {
       type: 'file',
       content: new DataBlock(content),
+      metadata: { dateCreated: new Date() },
     }
 
     parentDir.children.set(fileName, newFile)

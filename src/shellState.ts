@@ -1,5 +1,6 @@
 export class ShellState {
   private currentDirectory: string = '/'
+  private history: string[] = []
   private dirHistory: string[] = ['/']
 
   getCwd(): string {
@@ -8,14 +9,14 @@ export class ShellState {
 
   updateCwd(newCwd: string): void {
     this.currentDirectory = newCwd
-    this.addToHistory(newCwd)
+    this.addToDirHistory(newCwd)
   }
 
   getDirHistory(): string[] {
     return [...this.dirHistory]
   }
 
-  private addToHistory(path: string): void {
+  private addToDirHistory(path: string): void {
     this.dirHistory.push(path)
   }
 
@@ -34,5 +35,17 @@ export class ShellState {
       }
     }
     return `/${resolvedParts.join('/')}`
+  }
+
+  getHistory(): string[] {
+    return [...this.history]
+  }
+
+  addToHistory(command: string): void {
+    this.history.push(command)
+  }
+
+  clearHistory(): void {
+    this.history = []
   }
 }
