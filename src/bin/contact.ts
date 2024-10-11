@@ -1,6 +1,5 @@
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
-import type { Command } from './types'
+import type { Command, CommandArgs } from './types'
+import { fuzzyMatch, scoreMatch } from '../utils'
 
 const CONTACT_URLS = {
   github: 'https://github.com/igorsheg',
@@ -12,7 +11,7 @@ export class ContactCommand implements Command {
   name = 'contact'
   description = 'Open contact information in a new tab'
 
-  execute(args: string[], _fs: InMemoryFileSystem, _stdin: InputStream, stdout: OutputStream): void {
+  execute({ args, stdout }: CommandArgs): void {
     if (args.length !== 1) {
       stdout.write('Usage: contact <method>\n')
       stdout.write('Available methods: github, x, mail\n')
@@ -32,12 +31,12 @@ export class ContactCommand implements Command {
     }
   }
 
-  complete(args: string[], _fs: InMemoryFileSystem): string[] {
+  complete({ args }: CommandArgs): string[] {
     const partialMethod = args[args.length - 1] || ''
     const availableMethods = Object.keys(CONTACT_URLS)
 
-    return availableMethods.filter(method =>
-      method.startsWith(partialMethod.toLowerCase()),
-    )
+    return availableMethods
+      .filter(method => fuzzyMatch(partialMethod.toLowerCase(), method.toLowerCase()))
+      .sort((a, b) => scoreMatch(partialMethod, b) - scoreMatch(partialMethod, a))
   }
 }

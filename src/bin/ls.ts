@@ -1,52 +1,49 @@
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
-import type { Command } from './types'
+import type { Command, CommandArgs } from './types'
 
 export class LsCommand implements Command {
   name = 'ls'
   description = 'List directory contents'
+  isBuiltin = true as const
 
-  execute(args: string[], fs: InMemoryFileSystem, _stdin: InputStream, stdout: OutputStream): void {
-    const path = args.length > 0 ? args[0] : fs.getCwd()
-    try {
-      const contents = fs.listDirectory(fs.getAbsolutePath(path))
-      stdout.write(`${contents.join('\n')}\n`)
+  execute({ args, fs, shellState, stdout }: CommandArgs): void {
+    const path = args.length > 0 ? shellState.resolveAbsolutePath(args[0]) : shellState.getCwd()
+    const stat = fs.stat(path)
+    if (!stat) {
+      stdout.write(`ls: cannot access '${args[0]}': No such file or directory\n`)
+      return
     }
-    catch (error) {
-      if (error instanceof Error) {
-        stdout.write(`ls: ${path}: ${error.message}\n`)
-      }
+    if (stat.type === 'file') {
+      stdout.write(`${path.split('/').pop()}\n`)
+      return
+    }
+    const contents = fs.ls(path)
+    if (contents) {
+      stdout.write(`${contents.join('\n')}\n`)
     }
   }
 
-  complete(args: string[], fs: InMemoryFileSystem): string[] {
+  complete({ args, fs, shellState }: CommandArgs): string[] {
     const partialPath = args[args.length - 1] || ''
-
-    const fullPath = fs.getAbsolutePath(partialPath)
-
+    const fullPath = shellState.resolveAbsolutePath(partialPath)
     try {
       let items: string[]
       let prefix: string
-
-      if (fs.isDirectory(fullPath)) {
-        items = fs.listDirectory(fullPath)
+      const stat = fs.stat(fullPath)
+      if (stat && stat.type === 'dir') {
+        items = fs.ls(fullPath) || []
         prefix = ''
       }
       else {
-        const parentDir = fs.getParentDirectory(fullPath)
-        items = fs.listDirectory(parentDir)
+        const parentDir = fullPath.split('/').slice(0, -1).join('/')
+        items = fs.ls(parentDir) || []
         prefix = fullPath.split('/').pop() || ''
       }
-
-      const completions = items
+      return items
         .filter(item => item.startsWith(prefix))
         .map((item) => {
           const completedPath = partialPath + item.slice(prefix.length)
-          const fullCompletedPath = fs.getAbsolutePath(completedPath)
-          return fs.isDirectory(fullCompletedPath) ? `${completedPath}/` : completedPath
+          return `${completedPath}${fs.stat(shellState.resolveAbsolutePath(completedPath))?.type === 'dir' ? '/' : ''}`
         })
-
-      return completions
     }
     catch (error) {
       console.error('Error in ls completion:', error)

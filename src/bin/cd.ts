@@ -1,51 +1,47 @@
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
-import type { Command } from './types'
+import type { Command, CommandArgs } from './types'
 
 export class CdCommand implements Command {
   name = 'cd'
   description = 'Change the current directory'
+  isBuiltin = true as const
 
-  execute(args: string[], fs: InMemoryFileSystem, _stdin: InputStream, stdout: OutputStream): void {
+  execute({ args, fs, shellState, stdout }: CommandArgs): void {
     if (args.length !== 1) {
       stdout.write('Usage: cd <directory>\n')
       return
     }
-    try {
-      fs.chdir(args[0])
+    const newPath = shellState.resolveAbsolutePath(args[0])
+    const stat = fs.stat(newPath)
+    if (stat && stat.type === 'dir') {
+      shellState.updateCwd(newPath)
     }
-    catch (error) {
-      if (error instanceof Error) {
-        stdout.write(`${error.message}\n`)
-      }
+    else {
+      stdout.write(`cd: ${args[0]}: No such directory\n`)
     }
   }
 
-  complete(args: string[], fs: InMemoryFileSystem): string[] {
+  complete({ args, shellState, fs }: CommandArgs): string[] {
     const partialPath = args[args.length - 1] || ''
-    const fullPath = fs.getAbsolutePath(partialPath)
-
+    const fullPath = shellState.resolveAbsolutePath(partialPath)
     try {
       let items: string[]
       let prefix: string
-      if (fs.isDirectory(fullPath)) {
-        items = fs.listDirectory(fullPath)
+      const stat = fs.stat(fullPath)
+      if (stat && stat.type === 'dir') {
+        items = fs.ls(fullPath) || []
         prefix = ''
       }
       else {
-        const parentDir = fs.getParentDirectory(fullPath)
-        items = fs.listDirectory(parentDir)
+        const parentDir = fullPath.split('/').slice(0, -1).join('/')
+        items = fs.ls(parentDir) || []
         prefix = fullPath.split('/').pop() || ''
       }
-
-      const completions = items
-        .filter(item => item.startsWith(prefix) && fs.isDirectory(fs.getAbsolutePath(fs.joinPaths(fs.getParentDirectory(fullPath), item))))
+      return items
+        .filter(item => item.startsWith(prefix))
         .map((item) => {
           const completedPath = partialPath + item.slice(prefix.length)
-          return `${completedPath}/`
+          return `${completedPath}${fs.stat(shellState.resolveAbsolutePath(completedPath))?.type === 'dir' ? '/' : ''}`
         })
-
-      return completions
     }
     catch (error) {
       console.error('Error in cd completion:', error)

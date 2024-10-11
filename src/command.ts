@@ -1,37 +1,26 @@
-import type { Command } from './bin/types'
-import type { InMemoryFileSystem } from './fs'
-import type { InputStream, OutputStream } from './io'
+import type { BuiltinCommand, Command } from './bin/types'
 
 export class CommandRegistry {
-  private commands: Map<string, Command> = new Map()
+  private builtins: Map<string, BuiltinCommand> = new Map()
+  private externalCommands: Map<string, Command> = new Map()
 
-  registerCommand(command: Command): void {
-    this.commands.set(command.name, command)
+  registerBuiltin(command: BuiltinCommand): void {
+    this.builtins.set(command.name, command)
   }
 
-  executeCommand(name: string, args: string[], fs: InMemoryFileSystem, stdin: InputStream, stdout: OutputStream): void {
-    const command = this.commands.get(name)
-    if (command) {
-      command.execute(args, fs, stdin, stdout)
-    }
-    else {
-      stdout.write(`Command not found: ${name}\n`)
-    }
-  }
-
-  commandExists(name: string): boolean {
-    return this.commands.has(name)
-  }
-
-  getCommands(): Command[] {
-    return Array.from(this.commands.values())
+  registerExternal(command: Command): void {
+    this.externalCommands.set(command.name, command)
   }
 
   getCommand(name: string): Command | undefined {
-    return this.commands.get(name)
+    return this.builtins.get(name) || this.externalCommands.get(name)
+  }
+
+  getAllCommands(): Command[] {
+    return [...this.builtins.values(), ...this.externalCommands.values()]
   }
 
   getCommandNames(): string[] {
-    return Array.from(this.commands.keys())
+    return [...this.builtins.keys(), ...this.externalCommands.keys()]
   }
 }

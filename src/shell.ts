@@ -1,6 +1,7 @@
 import type { CommandRegistry } from './command'
-import type { InMemoryFileSystem } from './fs'
+import type { VirtualFileSystem } from './fs'
 import type { InputStream, OutputStream } from './io'
+import { ShellState } from './shellState'
 
 export interface CompletionResult {
   newLine: string
@@ -11,6 +12,7 @@ export interface CompletionResult {
 export type CompletionFunction = (line: string, direction: number) => CompletionResult
 
 export class Shell {
+  private state: ShellState = new ShellState()
   private prompt: string = '$ '
   private currentCompletions: string[] = []
   private selectedCompletionIndex: number = -1
@@ -19,27 +21,89 @@ export class Shell {
     private stdin: InputStream,
     private stdout: OutputStream,
     private commandRegistry: CommandRegistry,
-    private fileSystem: InMemoryFileSystem,
+    private fs: VirtualFileSystem,
   ) {
     this.stdin.onData(this.handleInput.bind(this))
   }
 
+  // private get context(): CommandContext {
+  //   return {
+  //     cwd: this.currentDirectory,
+  //     dirHistory: this.dirHistory,
+  //     resolvePath: this.resolveAbsolutePath.bind(this),
+  //     updateCwd: this.updateCwd.bind(this),
+  //     addToHistory: this.addToHistory.bind(this),
+  //   }
+  // }
+
+  // handleInput(input: string): void {
+  //   const trimmedInput = input.trim()
+  //   const [commandName, ...args] = trimmedInput.split(/\s+/)
+  //   if (commandName === 'clear') {
+  //     this.stdout.write('\x1B[2J\x1B[0f')
+  //   }
+  //   else if (commandName !== '') {
+  //     try {
+  //       const command = this.commandRegistry.getCommand(commandName)
+  //       if (command) {
+  //         command.execute({ args, ctx: this.context, fs: this.fs, stdin: this.stdin, stdout: this.stdout })
+  //       }
+  //       else {
+  //         this.stdout.write(`Command not found: ${commandName}\n`)
+  //       }
+  //     }
+  //     catch (error) {
+  //       this.stdout.write(`Error: ${(error as Error).message}\n`)
+  //     }
+  //   }
+  //   this.resetCompletions()
+  // }
+
   handleInput(input: string): void {
-    const trimmedInput = input.trim()
-    const [command, ...args] = trimmedInput.split(/\s+/)
-    if (command === 'clear') {
-      this.stdout.write('\x1B[2J\x1B[0f')
+    const [commandName, ...args] = input.trim().split(/\s+/)
+    if (commandName === '')
+      return
+
+    const command = this.commandRegistry.getCommand(commandName)
+    if (command) {
+      command.execute({
+        args,
+        shellState: this.state,
+        fs: this.fs,
+        stdin: this.stdin,
+        stdout: this.stdout,
+      })
     }
-    else if (command !== '') {
-      try {
-        this.commandRegistry.executeCommand(command, args, this.fileSystem, this.stdin, this.stdout)
-      }
-      catch (error) {
-        this.stdout.write(`Error: ${(error as Error).message}\n`)
-      }
+    else {
+      this.stdout.write(`Command not found: ${commandName}\n`)
     }
     this.resetCompletions()
   }
+
+  // private updateCwd(newCwd: string): void {
+  //   this.currentDirectory = newCwd
+  // }
+  //
+  // private addToHistory(path: string): void {
+  //   this.dirHistory.push(path)
+  // }
+  //
+  // private resolveAbsolutePath(path: string): string {
+  //   if (path.startsWith('/')) {
+  //     return path
+  //   }
+  //   const parts = [...this.currentDirectory.split('/').filter(Boolean), ...path.split('/').filter(Boolean)]
+  //   const resolvedParts: string[] = []
+  //   for (const part of parts) {
+  //     if (part === '..') {
+  //       resolvedParts.pop()
+  //     }
+  //     else if (part !== '.') {
+  //       resolvedParts.push(part)
+  //     }
+  //   }
+  //   return `/${resolvedParts.join('/')}`
+  // }
 
   complete(line: string, direction: number = 0): CompletionResult {
     const [partialCommand, ...args] = line.split(/\s+/)
@@ -57,7 +121,7 @@ export class Shell {
     else {
       const command = this.commandRegistry.getCommand(partialCommand)
       if (command && command.complete) {
-        completions = command.complete(args, this.fileSystem)
+        completions = command.complete({ stdin: this.stdin, stdout: this.stdout, args, shellState: this.state, fs: this.fs })
         if (completions.length === 1) {
           const preservedPart = [partialCommand, ...args.slice(0, -1)].join(' ')
           newLine = `${preservedPart} ${completions[0]}`.trim()
@@ -73,13 +137,11 @@ export class Shell {
       }
     }
 
-    // Update current completions and selected index
     if (completions.length > 0 && !this.arraysEqual(completions, this.currentCompletions)) {
       this.currentCompletions = completions
       this.selectedCompletionIndex = -1
     }
 
-    // Navigate through completions
     if (direction !== 0 && this.currentCompletions.length > 0) {
       this.selectedCompletionIndex += direction
       if (this.selectedCompletionIndex < 0)

@@ -1,165 +1,175 @@
-interface FileSystemNode {
-  name: string
-  isDirectory: boolean
-  content?: string
-  children?: Map<string, FileSystemNode>
-}
+export class DataBlock {
+  fileUrl: string
 
-export class InMemoryFileSystem {
-  private root: FileSystemNode
-  private currentDirectory: string
-
-  constructor(private baseUrl: string) {
-    this.root = { name: '/', isDirectory: true, children: new Map() }
-    this.currentDirectory = '/'
-    this.initializeFileSystem()
+  constructor(fileUrl: string) {
+    this.fileUrl = fileUrl
   }
 
-  private async initializeFileSystem(): Promise<void> {
+  async read(): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/directory-structure.json`)
-      const structure = await response.json()
-      this.buildFileSystem(structure, this.root)
+      const response = await fetch(this.fileUrl)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${this.fileUrl}`)
+      }
+      return await response.text()
     }
     catch (error) {
-      console.error('Failed to initialize file system:', error)
+      throw new Error(`Error reading file: ${(error as Error).message}`)
     }
   }
+}
 
-  private buildFileSystem(structure: any, node: FileSystemNode): void {
-    for (const [name, details] of Object.entries(structure)) {
-      if (typeof details === 'string') {
-        // It's a file
-        node.children!.set(name, { name, isDirectory: false, content: details })
-      }
-      else {
-        // It's a directory
-        const newNode: FileSystemNode = { name, isDirectory: true, children: new Map() }
-        node.children!.set(name, newNode)
-        this.buildFileSystem(details, newNode)
-      }
-    }
+export type DirINode = {
+  type: 'dir'
+  children: Map<string, INode>
+}
+
+export type FileINode = {
+  type: 'file'
+  content: DataBlock | string
+}
+
+export type INode = FileINode | DirINode
+
+export class VirtualFileSystem {
+  root: DirINode
+
+  constructor(tree?: DirINode) {
+    this.root = tree ?? { type: 'dir', children: new Map() }
   }
 
-  getCwd(): string {
-    return this.currentDirectory
-  }
-
-  chdir(path: string): void {
-    const resolvedPath = this.resolvePath(this.getAbsolutePath(path))
-    if (resolvedPath && resolvedPath.isDirectory) {
-      this.currentDirectory = this.getAbsolutePath(path)
-    }
-    else {
-      throw new Error(`cd: ${path}: No such directory`)
-    }
-  }
-
-  getAbsolutePath(path: string): string {
-    if (path.startsWith('/')) {
-      return path
-    }
-    return `${this.currentDirectory}${this.currentDirectory.endsWith('/') ? '' : '/'}${path}`
-  }
-
-  private resolvePath(path: string): FileSystemNode | null {
-    const parts = path.split('/').filter(p => p !== '')
-    let current = this.root
+  stat(path: string): INode | null {
+    const parts = path.split('/').filter(Boolean)
+    let current: INode = this.root
     for (const part of parts) {
-      if (part === '..') {
-        current = this.findParent(this.root, current) || this.root
+      if (current.type === 'file') {
+        return null
       }
-      else if (part !== '.') {
-        const child = current.children!.get(part)
-        if (!child) {
-          return null
-        }
-        current = child
+      const next = current.children.get(part)
+      if (!next) {
+        return null
       }
+      current = next
     }
     return current
   }
 
-  private findParent(node: FileSystemNode, target: FileSystemNode): FileSystemNode | null {
-    for (const child of node.children!.values()) {
-      if (child === target)
-        return node
-      if (child.isDirectory) {
-        const result = this.findParent(child, target)
-        if (result)
-          return result
+  mkdir(path: string, parents: boolean = false): boolean {
+    const parts = path.split('/').filter(Boolean)
+    let current = this.root
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
+      if ((current as INode).type === 'file') {
+        return false
       }
-    }
-    return null
-  }
 
-  async readFile(path: string): Promise<string> {
-    const node = this.resolvePath(path)
-    if (!node || node.isDirectory) {
-      throw new Error('File not found')
-    }
-    if (node.content) {
-      try {
-        const fullUrl = `${this.baseUrl}${node.content}`
-        const response = await fetch(fullUrl)
-        const content = await response.text()
-        node.content = content // Cache
-        return content
+      const next = current.children.get(part)
+      if (!next) {
+        if (i < parts.length - 1 && !parents) {
+          return false
+        }
+        // Create the missing directory
+        const newDir: DirINode = { type: 'dir', children: new Map() }
+        current.children.set(part, newDir)
+        current = newDir
       }
-      catch (error) {
-        console.error(`Failed to read file ${path}:`, error)
-        throw new Error('Failed to read file')
-      }
-    }
-    throw new Error('File content not found')
-  }
-
-  listDirectory(path: string): string[] {
-    const node = this.resolvePath(path)
-    if (!node || !node.isDirectory) {
-      throw new Error('Directory not found')
-    }
-    return Array.from(node.children!.keys())
-  }
-
-  joinPaths(...paths: string[]): string {
-    return paths.reduce((joined, part) => {
-      if (!joined)
-        return part
-      if (!part)
-        return joined
-
-      const joinedEndsWithSlash = joined.endsWith('/')
-      const partStartsWithSlash = part.startsWith('/')
-
-      if (joinedEndsWithSlash && partStartsWithSlash) {
-        return joined + part.slice(1)
-      }
-      else if (!joinedEndsWithSlash && !partStartsWithSlash) {
-        return `${joined}/${part}`
+      else if (next.type === 'dir') {
+        current = next
       }
       else {
-        return joined + part
+        // A file exists with this name
+        return false
       }
-    }, '')
+    }
+
+    return true
   }
 
-  getParentDirectory(path: string): string {
-    const parts = path.split('/').filter(p => p !== '')
-    return `/${parts.slice(0, -1).join('/')}`
+  touch(path: string, content: string = ''): boolean {
+    const parts = path.split('/').filter(Boolean)
+    const fileName = parts.pop()
+    if (!fileName) {
+      return false
+    }
+
+    const dirPath = `/${parts.join('/')}`
+    const parentDir = this.stat(dirPath)
+
+    if (!parentDir || parentDir.type !== 'dir') {
+      return false
+    }
+
+    const existingNode = parentDir.children.get(fileName)
+    if (existingNode) {
+      if (existingNode.type === 'file') {
+        // Update the existing file's content
+        existingNode.content = new DataBlock(content)
+        return true
+      }
+      return false
+    }
+
+    const newFile: FileINode = {
+      type: 'file',
+      content: new DataBlock(content),
+    }
+
+    parentDir.children.set(fileName, newFile)
+    return true
   }
 
-  isDirectory(path: string): boolean {
-    const node = this.resolvePath(path)
-    return node ? node.isDirectory : false
+  rm(path: string, recursive: boolean = false): boolean {
+    const parts = path.split('/').filter(Boolean)
+    const nodeName = parts.pop()
+    if (!nodeName) {
+      return false
+    }
+
+    const parentPath = `/${parts.join('/')}`
+    const parentDir = this.stat(parentPath)
+
+    if (!parentDir || parentDir.type !== 'dir') {
+      return false
+    }
+
+    const nodeToRemove = parentDir.children.get(nodeName)
+    if (!nodeToRemove) {
+      return false
+    }
+
+    if (nodeToRemove.type === 'dir' && !recursive) {
+      return false
+    }
+
+    return parentDir.children.delete(nodeName)
   }
 
-  isFile(path: string): boolean {
-    const node = this.resolvePath(path)
-    return node ? !node.isDirectory : false
+  ls(path: string): string[] | null {
+    const node = this.stat(path)
+    if (!node) {
+      return null
+    }
+    if (node.type === 'file') {
+      return [path.split('/').pop() || '']
+    }
+    return Array.from(node.children.keys())
   }
 
-  exists(path: string): boolean {
-    return this.resolvePath(path) !== null
+  resolveAbsolutePath(cwd: string, path: string): string {
+    if (path.startsWith('/')) {
+      return path
+    }
+    const parts = [...cwd.split('/').filter(Boolean), ...path.split('/').filter(Boolean)]
+    const resolvedParts: string[] = []
+    for (const part of parts) {
+      if (part === '..') {
+        resolvedParts.pop()
+      }
+      else if (part !== '.') {
+        resolvedParts.push(part)
+      }
+    }
+    return `/${resolvedParts.join('/')}`
   }
 }

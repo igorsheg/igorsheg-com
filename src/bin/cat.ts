@@ -1,19 +1,30 @@
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
-import type { Command } from './types'
+import type { Command, CommandArgs } from './types'
+import { DataBlock } from '../fs'
 
 export class CatCommand implements Command {
   name = 'cat'
   description = 'Display the contents of a file'
+  isBuiltin = true as const
 
-  async execute(args: string[], fs: InMemoryFileSystem, _stdin: InputStream, stdout: OutputStream): Promise<void> {
+  async execute({ args, shellState, stdout, fs }: CommandArgs): Promise<void> {
     if (args.length !== 1) {
       stdout.write('Usage: cat <filename>\n')
       return
     }
-    const filePath = fs.getAbsolutePath(args[0])
+    const filePath = shellState.resolveAbsolutePath(args[0])
+    const stat = fs.stat(filePath)
+    if (!stat || stat.type !== 'file') {
+      stdout.write(`cat: ${args[0]}: No such file\n`)
+      return
+    }
     try {
-      const content = await fs.readFile(filePath)
+      let content: string = ''
+      if (stat.content instanceof DataBlock) {
+        content = await stat.content.read()
+      }
+      else {
+        content = stat.content
+      }
       stdout.write(`${content}\n`)
     }
     catch (error) {
@@ -21,32 +32,29 @@ export class CatCommand implements Command {
     }
   }
 
-  complete(args: string[], fs: InMemoryFileSystem): string[] {
+  complete({ args, shellState, fs }: CommandArgs): string[] {
     const partialPath = args[args.length - 1] || ''
-    const fullPath = fs.getAbsolutePath(partialPath)
-
+    const fullPath = shellState.resolveAbsolutePath(partialPath)
     try {
       let items: string[]
       let prefix: string
-      if (fs.isDirectory(fullPath)) {
-        items = fs.listDirectory(fullPath)
+      const stat = fs.stat(fullPath)
+      if (stat && stat.type === 'dir') {
+        items = fs.ls(fullPath) || []
         prefix = ''
       }
       else {
-        const parentDir = fs.getParentDirectory(fullPath)
-        items = fs.listDirectory(parentDir)
+        const parentDir = fullPath.split('/').slice(0, -1).join('/')
+        items = fs.ls(parentDir) || []
         prefix = fullPath.split('/').pop() || ''
       }
-
-      const completions = items
+      return items
         .filter(item => item.startsWith(prefix))
         .map((item) => {
           const completedPath = partialPath + item.slice(prefix.length)
-          const fullCompletedPath = fs.getAbsolutePath(completedPath)
-          return fs.isDirectory(fullCompletedPath) ? `${completedPath}/` : completedPath
+          const completedStat = fs.stat(shellState.resolveAbsolutePath(completedPath))
+          return completedStat?.type === 'dir' ? `${completedPath}/` : completedPath
         })
-
-      return completions
     }
     catch (error) {
       console.error('Error in cat completion:', error)

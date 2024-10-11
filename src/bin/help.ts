@@ -1,7 +1,5 @@
 import type { CommandRegistry } from '../command'
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
-import type { Command } from './types'
+import type { Command, CommandArgs } from './types'
 
 export class HelpCommand implements Command {
   name = 'help'
@@ -9,12 +7,12 @@ export class HelpCommand implements Command {
 
   constructor(private commandRegistry: CommandRegistry) { }
 
-  execute(_args: string[], _fs: InMemoryFileSystem, _stdin: InputStream, stdout: OutputStream): void {
+  execute({ stdout }: CommandArgs): void {
     stdout.write('Usage:\n')
     stdout.write('  command [options]\n\n')
     stdout.write('Available commands:\n')
 
-    this.commandRegistry.getCommands().forEach((command) => {
+    this.commandRegistry.getAllCommands().forEach((command) => {
       stdout.write(`  ${command.name}\n`)
       stdout.write(`      ${command.description}\n\n`)
     })

@@ -29,6 +29,12 @@ export class Terminal {
 
   private handleKeyDown(event: KeyboardEvent): void {
     event.preventDefault()
+
+    if (event.ctrlKey && event.key === 'c') {
+      event.preventDefault()
+      this.handleCtrlC()
+      return
+    }
     switch (event.key) {
       case 'Enter':
         this.sendInput()
@@ -69,6 +75,13 @@ export class Terminal {
 
   private updatePrompt(): void {
     this.currentPrompt = this.getPromptCallback()
+  }
+
+  private handleCtrlC(): void {
+    this.output.push(`${this.currentPrompt + this.buffer}^C`)
+    this.clear()
+    this.updatePrompt()
+    this.render()
   }
 
   private backspace(): void {

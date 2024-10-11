@@ -1,12 +1,11 @@
-import type { InMemoryFileSystem } from '../fs'
-import type { InputStream, OutputStream } from '../io'
-import type { Command } from './types'
+import type { Command, CommandArgs } from './types'
 
 export class PwdCommand implements Command {
   name = 'pwd'
   description = 'Print the current working directory'
+  isBuiltin = true as const
 
-  execute(_args: string[], fs: InMemoryFileSystem, _stdin: InputStream, stdout: OutputStream): void {
-    stdout.write(`${fs.getCwd()}\n`)
+  execute({ stdout, shellState }: CommandArgs): void {
+    stdout.write(`${shellState.getCwd()}\n`)
   }
 }
