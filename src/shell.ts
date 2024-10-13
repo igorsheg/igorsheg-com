@@ -134,15 +134,25 @@ export class Shell {
   }
 
   getPrompt(): string {
-    return this.prompt
+    // You can also add ANSI escape sequences to color the prompt if desired
+    return `\x1B[32m${this.prompt}\x1B[0m`
   }
 
   setPrompt(newPrompt: string): void {
     this.prompt = newPrompt
   }
 
-  isValidCommand(input: string): boolean {
+  isValidCommand(input: string): string {
     const [commandName] = input.trim().split(/\s+/)
-    return this.commandRegistry.getCommand(commandName) !== undefined
+    const isValid = this.commandRegistry.getCommand(commandName) !== undefined
+
+    if (isValid) {
+      // Return the command name wrapped in ANSI escape sequences for blue color
+      return `\x1B[34m${commandName}\x1B[0m${input.slice(commandName.length)}`
+    }
+    else {
+      // Return the original input without color coding
+      return input
+    }
   }
 }

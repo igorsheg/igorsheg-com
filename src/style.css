@@ -152,3 +152,28 @@ canvas {
 .completions .selected {
   color: #58a6ff;
 }
+
+.bold {
+  font-weight: bold;
+}
+.underline {
+  text-decoration: underline;
+}
+.red {
+  color: #f85149;
+}
+.green {
+  color: #3fb950;
+}
+.yellow {
+  color: #d29922;
+}
+.blue {
+  color: #58a6ff;
+}
+.magenta {
+  color: #bc8cff;
+}
+.cyan {
+  color: #39c5cf;
+}

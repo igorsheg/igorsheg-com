@@ -1,18 +1,16 @@
-┌────────────────────────────────────────────────────────────┐
-│                    IGOR SHEGOLEV                           │
-│                   Software Engineer                        │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│  [WEB]    https://igorsheg.com                             │
-│  [GIT]    https://github.com/igorsheg                      │
-│  [TWEET]  https://twitter.com/igorsheg                     │
-│  [MAIL]   igorsheg@gmail.com                               │
-│                                                            │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│  Type 'contact <method>' to quickly copy contact info.     │
-│  Example: 'contact web' will copy the website URL.         │
-│                                                            │
-│  Available methods: web, git, tweet, mail                  │
-│                                                            │
-└────────────────────────────────────────────────────────────┘
+Welcome to Igor Shegolev's personal shell
+
+Igor Shegolev
+Software Engineer
+
+Web:    https://igorsheg.com
+GitHub: https://github.com/igorsheg
+Twitter: https://twitter.com/igor_sheg
+Email:  igorsheg@gmail.com
+
+Quick access:
+  contact github - Open GitHub profile URL
+  contact x      - Open Twitter/X profile URL
+  contact mail   - Send an email
+
+Type 'help' for a list of available commands.
