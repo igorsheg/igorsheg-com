@@ -1,5 +1,6 @@
 import type { OutputStream } from './io'
 import type { CompletionFunction } from './shell'
+import { ANSI } from './lib'
 import { TerminalRenderer } from './render'
 
 export class Terminal {
@@ -104,14 +105,14 @@ export class Terminal {
 
   private startReading(): void {
     this.stdout.onWrite((data) => {
-      if (data === '\x1B[2J\x1B[0f') {
+      if (data === ANSI.CLEAR) {
         this.clear()
       }
       else {
         const lines = data.split('\n')
         lines.forEach((line, index) => {
           if (index === lines.length - 1 && line === '') {
-            return // Skip empty line at the end
+            return
           }
           this.output.push(line)
         })

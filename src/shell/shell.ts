@@ -1,6 +1,7 @@
 import type { CommandRegistry } from '../command'
 import type { VirtualFileSystem } from '../fs'
 import type { InputStream, OutputStream } from '../io'
+import { ANSI } from '../lib'
 import { MinimalistPrompt } from './prompt'
 import { ShellState } from './state'
 
@@ -35,7 +36,7 @@ export class Shell {
     const [commandName, ...args] = input.trim().split(/\s+/)
 
     if (commandName === 'clear') {
-      this.stdout.write('\x1B[2J\x1B[0f')
+      this.stdout.write(ANSI.CLEAR)
       return
     }
 

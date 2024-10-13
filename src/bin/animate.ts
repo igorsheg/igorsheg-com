@@ -1,4 +1,5 @@
 import type { Command, CommandArgs } from './types'
+import { ANSI } from '../lib'
 
 class Starfield {
   private stars: { x: number, y: number }[] = []
@@ -57,7 +58,7 @@ export class AnimateCommand implements Command {
     stdout.write('Starting space animation... (Press Ctrl+C to stop)\n')
 
     const intervalId = setInterval(() => {
-      stdout.write('\x1B[2J\x1B[H') // Clear screen and move cursor to home position
+      stdout.write(ANSI.CLEAR)
 
       const field = starfield.render().split('\n')
 
@@ -81,7 +82,7 @@ export class AnimateCommand implements Command {
 
     setTimeout(() => {
       clearInterval(intervalId)
-      stdout.write('\x1B[2J\x1B[H') // Clear screen and move cursor to home
+      stdout.write(ANSI.CLEAR)
       stdout.write('Space journey completed!\n')
     }, 6000)
   }
