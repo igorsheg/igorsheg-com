@@ -141,11 +141,6 @@ export class Terminal {
     if (sequence === '\x1B[2J') {
       this.clear()
     }
-    else if (sequence === '\x1B[0f' || sequence === '\x1B[H') {
-      // Move cursor to home position (0, 0)
-      // In our case, we don't need to do anything special
-    }
-    // Add more ANSI sequence handlers as needed
   }
 
   private handleCompleteLine(line: string): void {
