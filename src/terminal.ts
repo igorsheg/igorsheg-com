@@ -5,7 +5,7 @@ import { TerminalRenderer } from './render'
 export class Terminal {
   private output: string[] = []
   private buffer: string = ''
-  private lineBuffer: string = ''
+  private ansiBuffer: string = ''
   private currentPrompt: string = ''
   private isValidCommand: (input: string) => string
   private renderer: TerminalRenderer
@@ -58,6 +58,9 @@ export class Terminal {
       case 'ArrowDown':
         this.handleTabCompletion(1)
         break
+      case ' ':
+        this.appendToInput(' ')
+        break
       default:
         if (event.key.length === 1) {
           this.appendToInput(event.key)
@@ -105,27 +108,48 @@ export class Terminal {
 
   private startReading(): void {
     this.stdout.onWrite((data) => {
-      this.lineBuffer += data
-      let newlineIndex = this.lineBuffer.indexOf('\n')
-
-      while (newlineIndex !== -1) {
-        const line = this.lineBuffer.slice(0, newlineIndex)
-        this.handleCompleteLine(line)
-        this.lineBuffer = this.lineBuffer.slice(newlineIndex + 1)
-        newlineIndex = this.lineBuffer.indexOf('\n')
+      for (let i = 0; i < data.length; i++) {
+        const char = data[i]
+        if (this.ansiBuffer.length > 0 || char === '\x1B') {
+          this.ansiBuffer += char
+          if (this.isCompleteAnsiSequence(this.ansiBuffer)) {
+            this.handleAnsiSequence(this.ansiBuffer)
+            this.ansiBuffer = ''
+          }
+        }
+        else if (char === '\n') {
+          this.handleCompleteLine(this.buffer)
+          this.buffer = ''
+        }
+        else {
+          this.buffer += char
+        }
       }
-
+      if (this.buffer.length > 0) {
+        this.handleCompleteLine(this.buffer)
+        this.buffer = ''
+      }
       this.render()
     })
   }
 
-  private handleCompleteLine(line: string): void {
-    if (line === '\x1B[2J\x1B[0f') {
+  private isCompleteAnsiSequence(sequence: string): boolean {
+    return /^\x1B\[[0-9;]*[A-Z]$/i.test(sequence)
+  }
+
+  private handleAnsiSequence(sequence: string): void {
+    if (sequence === '\x1B[2J') {
       this.clear()
     }
-    else {
-      this.output.push(line)
+    else if (sequence === '\x1B[0f' || sequence === '\x1B[H') {
+      // Move cursor to home position (0, 0)
+      // In our case, we don't need to do anything special
     }
+    // Add more ANSI sequence handlers as needed
+  }
+
+  private handleCompleteLine(line: string): void {
+    this.output.push(line)
   }
 
   private render(completions: string[] = [], selectedIndex: number = -1): void {

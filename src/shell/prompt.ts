@@ -42,6 +42,6 @@ export class MinimalistPrompt {
     const directory = `${ANSI.BOLD}${ANSI.FG.MAGENTA} in ${cwd} ${ANSI.RESET}`
     const promptSymbol = `${ANSI.BOLD}${ANSI.FG.GREEN}❯${ANSI.RESET}`
 
-    return `${userHost}${directory}${promptSymbol}`
+    return `${userHost}${directory}${promptSymbol}${ANSI.SPACE}`
   }
 }

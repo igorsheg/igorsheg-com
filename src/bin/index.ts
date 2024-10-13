@@ -1,3 +1,4 @@
+export * from './animate.ts'
 export * from './cat'
 export * from './cd'
 export * from './contact'

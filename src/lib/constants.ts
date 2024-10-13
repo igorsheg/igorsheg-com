@@ -1,5 +1,6 @@
 export const ANSI = {
   RESET: '\x1B[0m',
+  SPACE: '\u00A0',
 
   BOLD: '\x1B[1m',
   DIM: '\x1B[2m',

@@ -11,7 +11,8 @@ export class DataBlock {
       if (!response.ok) {
         throw new Error(`Failed to fetch file: ${this.fileUrl}`)
       }
-      return await response.text()
+      const text = await response.text()
+      return text
     }
     catch (error) {
       throw new Error(`Error reading file: ${(error as Error).message}`)

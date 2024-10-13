@@ -1,4 +1,4 @@
-import { CatCommand, CdCommand, ContactCommand, HelpCommand, LsCommand, PwdCommand } from './bin'
+import { AnimateCommand, CatCommand, CdCommand, ContactCommand, HelpCommand, LsCommand, PwdCommand } from './bin'
 import { CommandRegistry } from './command'
 import { VirtualFileSystem } from './fs'
 import { InputStream, OutputStream } from './io'
@@ -24,6 +24,7 @@ cmdReg.registerBuiltin(new LsCommand())
 cmdReg.registerBuiltin(new CatCommand())
 cmdReg.registerExternal(new ContactCommand())
 cmdReg.registerExternal(new HelpCommand(cmdReg))
+cmdReg.registerExternal(new AnimateCommand())
 
 const shell = new Shell('igorsheg', stdin, stdout, cmdReg, vfs)
 const terminal = new Terminal(

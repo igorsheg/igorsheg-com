@@ -1,4 +1,4 @@
-Welcome to Igor Shegolev's personal shell
+Welcome to Igor Shegolev's personal shell 
 
 Igor Shegolev
 Software Engineer
