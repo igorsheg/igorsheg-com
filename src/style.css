@@ -1,16 +1,16 @@
-/* terminal-style.css */
 :root {
-  font-family: "JetBrains Mono", monospace;
-  font-optical-sizing: auto;
-  font-style: normal;
-  line-height: 1.5;
-  font-weight: 500;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --font-family: "JetBrains Mono", monospace;
+  --bg-color: #0d1117;
+  --text-color: #c9d1d9;
+  --input-color: #fff;
+  --prompt-color: #0f0;
+  --error-color: #f85149;
+  --link-color: #58a6ff;
+  --scrollbar-bg: #161b22;
+  --scrollbar-thumb: #30363d;
 }
 
+/* Base styles */
 *,
 *::before,
 *::after {
@@ -20,37 +20,27 @@
 body {
   margin: 0;
   height: 100vh;
-  padding: 0;
-  font-family: inherit;
-}
-
-#terminal {
-  width: 100%;
-  height: 100%;
-  background-color: #0d1117;
-  font-family: inherit;
-  font-weight: inherit;
-  color: #c9d1d9;
-  font-size: 14px;
+  font-family: var(--font-family);
+  font-optical-sizing: auto;
+  font-weight: 500;
   line-height: 1.5;
-  padding: 10px;
-  overflow-y: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Terminal container */
 #terminal {
   position: relative;
   width: 100%;
   height: 100vh;
+  padding: 10px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-size: 14px;
+  overflow-y: auto;
 }
 
-canvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
+/* Terminal content */
 .terminal-output,
 .terminal-input {
   margin: 0;
@@ -58,8 +48,23 @@ canvas {
   word-wrap: break-word;
 }
 
+.command-input {
+  display: flex;
+  align-items: center;
+  color: var(--input-color);
+}
+
+.command-input > span {
+  white-space: pre;
+}
+
 .prompt {
-  color: #0f0;
+  color: var(--prompt-color);
+}
+
+.cursor {
+  margin-left: 1px;
+  animation: blink 1s steps(2, start) infinite;
 }
 
 @keyframes blink {
@@ -68,17 +73,44 @@ canvas {
   }
 }
 
-/* Remove extra space between spans */
-.terminal-output span,
-.terminal-input span {
-  display: inline-block;
+/* Completions */
+.completions {
+  color: var(--input-color);
+  padding: 5px;
 }
 
-/* Ensure smooth transition when input becomes history */
-.terminal-output,
-.terminal-input {
-  font-size: 14px;
-  line-height: 1.5;
+.completions .selected {
+  color: var(--link-color);
+}
+
+/* Text styles */
+.bold {
+  font-weight: bold;
+}
+.underline {
+  text-decoration: underline;
+}
+.red {
+  color: #f85149;
+}
+.green {
+  color: #3fb950;
+}
+.yellow {
+  color: #d29922;
+}
+.blue {
+  color: #58a6ff;
+}
+.magenta {
+  color: #bc8cff;
+}
+.cyan {
+  color: #39c5cf;
+}
+
+.error-message {
+  color: var(--error-color);
 }
 
 /* Scrollbar styles */
@@ -87,93 +119,11 @@ canvas {
 }
 
 #terminal::-webkit-scrollbar-track {
-  background: #161b22;
+  background: var(--scrollbar-bg);
 }
 
 #terminal::-webkit-scrollbar-thumb {
-  background-color: #30363d;
+  background-color: var(--scrollbar-thumb);
   border-radius: 6px;
-  border: 3px solid #0d1117;
-}
-
-.bold {
-  font-weight: bold;
-}
-.underline {
-  text-decoration: underline;
-}
-.red {
-  color: #f85149;
-}
-.green {
-  color: #3fb950;
-}
-.yellow {
-  color: #d29922;
-}
-.blue {
-  color: #58a6ff;
-}
-.magenta {
-  color: #bc8cff;
-}
-.cyan {
-  color: #39c5cf;
-}
-.cursor {
-  animation: blink 1s steps(2, start) infinite;
-}
-
-.command-input {
-  color: #fff; /* White color for user input as they type */
-}
-
-.command-output {
-  color: #c9d1d9; /* White color for submitted command output */
-}
-
-.user-input {
-  color: #fff; /* Ensure user input is white */
-}
-
-.user-input.valid-command {
-  color: #58a6ff;
-}
-
-.error-message {
-  color: #f85149;
-}
-
-.completions {
-  color: #fff;
-  padding: 5px;
-}
-
-.completions .selected {
-  color: #58a6ff;
-}
-
-.bold {
-  font-weight: bold;
-}
-.underline {
-  text-decoration: underline;
-}
-.red {
-  color: #f85149;
-}
-.green {
-  color: #3fb950;
-}
-.yellow {
-  color: #d29922;
-}
-.blue {
-  color: #58a6ff;
-}
-.magenta {
-  color: #bc8cff;
-}
-.cyan {
-  color: #39c5cf;
+  border: 3px solid var(--bg-color);
 }

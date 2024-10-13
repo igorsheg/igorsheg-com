@@ -1,4 +1,3 @@
-import type { CompletionResult } from './shell'
 import { CatCommand, CdCommand, ContactCommand, HelpCommand, LsCommand, PwdCommand } from './bin'
 import { CommandRegistry } from './command'
 import { VirtualFileSystem } from './fs'
@@ -14,6 +13,8 @@ const stdout = new OutputStream()
 const vfs = new VirtualFileSystem()
 vfs.mkdir('/home/igorsheg/projects', true)
 vfs.touch('/home/igorsheg/projects/igorsheg.txt', '/projects/igorsheg.txt')
+vfs.touch('/home/igorsheg/projects/setup.txt', '/projects/setup.txt')
+vfs.touch('/home/igorsheg/projects/typedkey.txt', '/projects/typedkey.txt')
 vfs.touch('/home/igorsheg/about.txt', '/about.txt')
 
 const cmdReg = new CommandRegistry()
@@ -24,16 +25,14 @@ cmdReg.registerBuiltin(new CatCommand())
 cmdReg.registerExternal(new ContactCommand())
 cmdReg.registerExternal(new HelpCommand(cmdReg))
 
-const shell = new Shell(stdin, stdout, cmdReg, vfs)
+const shell = new Shell('igorsheg', stdin, stdout, cmdReg, vfs)
 const terminal = new Terminal(
   terminalElement,
   stdout,
-  (input) => {
-    stdin.write(input)
-  },
-  (line, direction): CompletionResult => shell.complete(line, direction),
-  () => shell.getPrompt(),
-  (input: string) => shell.isValidCommand(input),
+  stdin.write.bind(stdin),
+  shell.complete.bind(shell),
+  shell.getPrompt.bind(shell),
+  shell.isValidCommand.bind(shell),
 )
 
 terminal.focus()

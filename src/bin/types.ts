@@ -1,6 +1,6 @@
 import type { VirtualFileSystem } from '../fs'
 import type { InputStream, OutputStream } from '../io'
-import type { ShellState } from '../shellState'
+import type { ShellState } from '../shell'
 
 export interface CommandArgs {
   args: string[]

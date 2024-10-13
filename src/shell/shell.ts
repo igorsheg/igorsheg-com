@@ -1,7 +1,8 @@
-import type { CommandRegistry } from './command'
-import type { VirtualFileSystem } from './fs'
-import type { InputStream, OutputStream } from './io'
-import { ShellState } from './shellState'
+import type { CommandRegistry } from '../command'
+import type { VirtualFileSystem } from '../fs'
+import type { InputStream, OutputStream } from '../io'
+import { MinimalistPrompt } from './prompt'
+import { ShellState } from './state'
 
 export interface CompletionResult {
   newLine: string
@@ -12,18 +13,22 @@ export interface CompletionResult {
 export type CompletionFunction = (line: string, direction: number) => CompletionResult
 
 export class Shell {
-  private state: ShellState = new ShellState()
-  private prompt: string = '$ '
+  private state: ShellState
   private currentCompletions: string[] = []
   private selectedCompletionIndex: number = -1
+  private invalidCmdsCount: number = 0
+  private promptGenerator: MinimalistPrompt
 
   constructor(
+    user: string,
     private stdin: InputStream,
     private stdout: OutputStream,
     private commandRegistry: CommandRegistry,
     private fs: VirtualFileSystem,
   ) {
+    this.state = new ShellState(user)
     this.stdin.onData(this.handleInput.bind(this))
+    this.promptGenerator = new MinimalistPrompt(this.state)
   }
 
   handleInput(input: string): void {
@@ -46,9 +51,16 @@ export class Shell {
         stdin: this.stdin,
         stdout: this.stdout,
       })
+      this.invalidCmdsCount = 0
     }
     else {
       this.stdout.write(`Command not found: ${commandName}\n`)
+
+      this.invalidCmdsCount++
+
+      if (this.invalidCmdsCount >= 2) {
+        this.stdout.write('Type \'help\' for a list of available commands.')
+      }
     }
     this.state.addToHistory(commandName)
     this.resetCompletions()
@@ -134,12 +146,11 @@ export class Shell {
   }
 
   getPrompt(): string {
-    // You can also add ANSI escape sequences to color the prompt if desired
-    return `\x1B[32m${this.prompt}\x1B[0m`
+    return this.prompt
   }
 
-  setPrompt(newPrompt: string): void {
-    this.prompt = newPrompt
+  get prompt(): string {
+    return this.promptGenerator.prompt
   }
 
   isValidCommand(input: string): string {
@@ -147,11 +158,9 @@ export class Shell {
     const isValid = this.commandRegistry.getCommand(commandName) !== undefined
 
     if (isValid) {
-      // Return the command name wrapped in ANSI escape sequences for blue color
       return `\x1B[34m${commandName}\x1B[0m${input.slice(commandName.length)}`
     }
     else {
-      // Return the original input without color coding
       return input
     }
   }

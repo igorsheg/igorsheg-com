@@ -5,6 +5,7 @@ import { TerminalRenderer } from './render'
 export class Terminal {
   private output: string[] = []
   private buffer: string = ''
+  private lineBuffer: string = ''
   private currentPrompt: string = ''
   private isValidCommand: (input: string) => string
   private renderer: TerminalRenderer
@@ -104,15 +105,27 @@ export class Terminal {
 
   private startReading(): void {
     this.stdout.onWrite((data) => {
-      if (data === '\x1B[2J\x1B[0f') {
-        this.clear()
+      this.lineBuffer += data
+      let newlineIndex = this.lineBuffer.indexOf('\n')
+
+      while (newlineIndex !== -1) {
+        const line = this.lineBuffer.slice(0, newlineIndex)
+        this.handleCompleteLine(line)
+        this.lineBuffer = this.lineBuffer.slice(newlineIndex + 1)
+        newlineIndex = this.lineBuffer.indexOf('\n')
       }
-      else {
-        const lines = data.split(/\r\n|\r|\n/)
-        this.output.push(...lines)
-      }
+
       this.render()
     })
+  }
+
+  private handleCompleteLine(line: string): void {
+    if (line === '\x1B[2J\x1B[0f') {
+      this.clear()
+    }
+    else {
+      this.output.push(line)
+    }
   }
 
   private render(completions: string[] = [], selectedIndex: number = -1): void {

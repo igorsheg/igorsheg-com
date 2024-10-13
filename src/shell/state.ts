@@ -1,7 +1,13 @@
 export class ShellState {
+  private user: string
   private currentDirectory: string = '/'
   private history: string[] = []
   private dirHistory: string[] = ['/']
+
+  constructor(user: string) {
+    this.user = user
+    this.currentDirectory = `/home/${this.user}`
+  }
 
   getCwd(): string {
     return this.currentDirectory

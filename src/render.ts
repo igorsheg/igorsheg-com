@@ -1,3 +1,5 @@
+import { ANSI } from './lib'
+
 export class TerminalRenderer {
   private container: HTMLElement
   private outputElement: HTMLElement
@@ -48,8 +50,7 @@ export class TerminalRenderer {
   }
 
   private parseAnsiEscapes(text: string): string {
-    const ESC = '\u001B'
-    const ansiRegex = new RegExp(`${ESC}\\[([0-9;]*)m`, 'g')
+    const ansiRegex = new RegExp(`\x1B\\[([0-9;]*)m`, 'g')
     let result = ''
     let lastIndex = 0
 
@@ -73,35 +74,44 @@ export class TerminalRenderer {
             result += `<span class="bold">`
             openTags.push('bold')
             break
+          case 2: // Dim
+            result += `<span class="dim">`
+            openTags.push('dim')
+            break
+          case 3: // Italic
+            result += `<span class="italic">`
+            openTags.push('italic')
+            break
           case 4: // Underline
             result += `<span class="underline">`
             openTags.push('underline')
             break
-          case 31: // Red
-            result += `<span class="red">`
-            openTags.push('red')
+          case 5: // Blink
+            result += `<span class="blink">`
+            openTags.push('blink')
             break
-          case 32: // Green
-            result += `<span class="green">`
-            openTags.push('green')
+          case 7: // Reverse
+            result += `<span class="reverse">`
+            openTags.push('reverse')
             break
-          case 33: // Yellow
-            result += `<span class="yellow">`
-            openTags.push('yellow')
+          case 8: // Hidden
+            result += `<span class="hidden">`
+            openTags.push('hidden')
             break
-          case 34: // Blue
-            result += `<span class="blue">`
-            openTags.push('blue')
+          case 30: case 31: case 32: case 33: case 34: case 35: case 36: case 37:
+            const colorClass = Object.keys(ANSI.FG).find(key => ANSI.FG[key as keyof typeof ANSI.FG].endsWith(`[${code}m`))
+            if (colorClass) {
+              result += `<span class="${colorClass.toLowerCase()}">`
+              openTags.push(colorClass.toLowerCase())
+            }
             break
-          case 35: // Magenta
-            result += `<span class="magenta">`
-            openTags.push('magenta')
+          case 40: case 41: case 42: case 43: case 44: case 45: case 46: case 47:
+            const bgColorClass = Object.keys(ANSI.BG).find(key => ANSI.BG[key as keyof typeof ANSI.BG].endsWith(`[${code}m`))
+            if (bgColorClass) {
+              result += `<span class="bg-${bgColorClass.toLowerCase()}">`
+              openTags.push(`bg-${bgColorClass.toLowerCase()}`)
+            }
             break
-          case 36: // Cyan
-            result += `<span class="cyan">`
-            openTags.push('cyan')
-            break
-          // Add more cases as needed
         }
       }
 
@@ -110,7 +120,6 @@ export class TerminalRenderer {
 
     result += this.escapeHtml(text.slice(lastIndex))
 
-    // Close any remaining open tags
     while (openTags.length > 0) {
       result += `</span>`
       openTags.pop()
