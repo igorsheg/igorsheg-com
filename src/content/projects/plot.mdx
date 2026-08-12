@@ -21,19 +21,20 @@ Plot draws a hard line between facts, judgment, and control.
 - A **Workflow** supplies integration configuration, model and runtime policy, and the prompt that defines good judgment.
 - **Plot** reconciles observations, claims work, schedules Agent Runs, applies retries and timeouts, and records the Session operators inspect.
 
-<Prescii label="An extension turns external state into work items; Plot schedules agent runs that act through extension tools"><span class="fg-yellow">{`external system
-      |
-   discover
-      v
-+-----------+   Work Items   +-----------+
-| Extension | -------------> |   Plot    |
-+-----+-----+                 | scheduler |
-      ^                       +-----+-----+
-      | bound tools                 |
-      +--------- Agent Run <--------+
+<Prescii label="An extension turns external state into work items; Plot schedules agent runs that act through extension tools"><span class="fg-yellow">{`
+  external system
+        |
+     discover
+        v
+  +-----------+   Work Items   +-----------+
+  | Extension | -------------> |   Plot    |
+  +-----+-----+                | scheduler |
+        ^                      +-----+-----+
+        | bound tools                |
+        +--------- Agent Run <-------+
                        ^
                        | prompt
-                    Workflow`}</span></Prescii>
+                   Workflow`}</span></Prescii>
 
 The Extension does not keep a shadow queue. Once its requirements are ready, each successful discovery reports what the authoritative system says now. Plot compares that complete observation with what it already knows.
 
@@ -43,11 +44,12 @@ A Work Item’s `id` names the domain object. Its `version` names the revision w
 
 Discovery has a small, explicit vocabulary:
 
-<Prescii label="Plot discovery outcomes and their scheduling effects"><span class="fg-red">{`pending    | dispatch
-waiting    | hold for the world
-blocked    | hold for an operator
-cancelled  | interrupt and release
-absent     | drain, then remove`}</span></Prescii>
+<Prescii label="Plot discovery outcomes and their scheduling effects"><span class="fg-red">{`
+  pending    | dispatch
+  waiting    | hold for the world
+  blocked    | hold for an operator
+  cancelled  | interrupt and release
+  absent     | drain, then remove`}</span></Prescii>
 
 Absence is how work finishes. Once a pull request is reviewed, a ticket is closed, or a queue row is gone, the Extension stops returning it.
 
