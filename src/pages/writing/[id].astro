@@ -1,0 +1,48 @@
+---
+import type { CollectionEntry } from 'astro:content'
+import { getCollection, render } from 'astro:content'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+export async function getStaticPaths() {
+  const posts = await getCollection('writing', ({ data }) => !data.draft)
+
+  return posts.map(post => ({
+    params: { id: post.id },
+    props: { post },
+  }))
+}
+
+interface Props {
+  post: CollectionEntry<'writing'>
+}
+
+const { post } = Astro.props
+const { Content } = await render(post)
+const formattedDate = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'long',
+  timeZone: 'UTC',
+}).format(post.data.publishDate)
+---
+
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  ogType="article"
+  publishedDate={post.data.publishDate}
+  updatedDate={post.data.updatedDate}
+  ogImage={`/og/writing/${post.id}.png`}
+>
+  <article>
+    <h1 class="page-title">{post.data.title}</h1>
+    <p class="meta">
+      <time datetime={post.data.publishDate.toISOString()}>{formattedDate}</time>
+    </p>
+    <p class="summary">{post.data.description}</p>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <a class="footer-link" href="/">← Back home</a>
+  </article>
+</BaseLayout>

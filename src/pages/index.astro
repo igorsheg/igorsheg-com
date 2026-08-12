@@ -1,0 +1,75 @@
+---
+import { getCollection, getEntry } from 'astro:content'
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { SITE_URL } from '../site'
+
+const profile = await getEntry('site', 'profile')
+
+if (!profile)
+  throw new Error('Missing required site profile at src/content/site/profile.json')
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order)
+const writing = (await getCollection('writing'))
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.publishDate.getTime() - a.data.publishDate.getTime())
+const recentWriting = writing.slice(0, 5)
+const hostname = new URL(SITE_URL).hostname
+---
+
+<BaseLayout home>
+  <p class="ornament" aria-hidden="true">~*~ {hostname} ~*~</p>
+
+  <section class="about" aria-labelledby="about-heading">
+    <h1 id="about-heading" class="section-heading">About</h1>
+    <p class="introduction">{profile.data.biography}</p>
+  </section>
+
+  <section aria-labelledby="projects-heading">
+    <h2 id="projects-heading" class="section-heading">Projects</h2>
+    <ul class="plain-list source-list">
+      {
+        projects.map(project => (
+          <li>
+            [{project.data.title}](<a href={`/projects/${project.id}/`}>/projects/{project.id}</a>)
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  {
+    writing.length > 0 && (
+      <section aria-labelledby="writing-heading">
+        <h2 id="writing-heading" class="section-heading">Writing</h2>
+        <ul class="plain-list source-list">
+          {recentWriting.map(post => (
+            <li>
+              [{post.data.title}](<a href={`/writing/${post.id}/`}>/writing/{post.id}</a>)
+            </li>
+          ))}
+          {writing.length > recentWriting.length && (
+            <li>
+              [All writing](<a href="/writing/">/writing</a>)
+            </li>
+          )}
+        </ul>
+      </section>
+    )
+  }
+
+  <section aria-labelledby="contact-heading">
+    <h2 id="contact-heading" class="section-heading">Contact</h2>
+    <ul class="plain-list source-list">
+      <li>
+        [Email](<a href={`mailto:${profile.data.email}`}>mailto:{profile.data.email}</a>)
+      </li>
+      {
+        profile.data.socials.map(link => (
+          <li>
+            [{link.label}](<a href={link.url} target="_blank" rel="noreferrer">{link.url}</a>)
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</BaseLayout>

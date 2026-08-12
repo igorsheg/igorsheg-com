@@ -1,0 +1,62 @@
+---
+title: Plot
+description: A control plane for long-running coding-agent work.
+order: 2
+links:
+  - label: GitHub
+    url: https://github.com/igorsheg/plot
+---
+
+import Prescii from '../../components/Prescii.astro'
+
+One agent run is a task. Keeping agents working against a changing queue all day is a control problem.
+
+The surrounding system has to discover work, avoid duplicates, respect concurrency, retry failures, notice stale revisions, retain session history, and show an operator what is happening. Plot owns that machinery so each integration does not grow its own scheduler.
+
+## Three layers, one source of truth
+
+Plot draws a hard line between facts, judgment, and control.
+
+- An **Extension** observes an external system and returns Work Items with stable domain identities. It may also expose safe, item-bound tools back to the agent.
+- A **Workflow** supplies integration configuration, model and runtime policy, and the prompt that defines good judgment.
+- **Plot** reconciles observations, claims work, schedules Agent Runs, applies retries and timeouts, and records the Session operators inspect.
+
+<Prescii label="An extension turns external state into work items; Plot schedules agent runs that act through extension tools"><span class="fg-yellow">{`external system
+      |
+   discover
+      v
++-----------+   Work Items   +-----------+
+| Extension | -------------> |   Plot    |
++-----+-----+                 | scheduler |
+      ^                       +-----+-----+
+      | bound tools                 |
+      +--------- Agent Run <--------+
+                       ^
+                       | prompt
+                    Workflow`}</span></Prescii>
+
+The Extension does not keep a shadow queue. Once its requirements are ready, each successful discovery reports what the authoritative system says now. Plot compares that complete observation with what it already knows.
+
+## Reconcile, do not enqueue
+
+A Work Item’s `id` names the domain object. Its `version` names the revision worth running. If the version changes while an older run is active, the old run is allowed to drain and the new revision is scheduled fresh.
+
+Discovery has a small, explicit vocabulary:
+
+<Prescii label="Plot discovery outcomes and their scheduling effects"><span class="fg-red">{`pending    | dispatch
+waiting    | hold for the world
+blocked    | hold for an operator
+cancelled  | interrupt and release
+absent     | drain, then remove`}</span></Prescii>
+
+Absence is how work finishes. Once a pull request is reviewed, a ticket is closed, or a queue row is gone, the Extension stops returning it.
+
+That makes one edge case especially important: an empty discovery result is a statement of fact, not an error code. If an API is unavailable, the Extension throws. Plot preserves the last known work and tries again later instead of interpreting an outage as “everything is done.”
+
+## Tools close the loop
+
+Mutation tools can be resolved for a specific Work Item and run. They can re-check the item’s identity and version immediately before writing, which keeps a stale run from acting on newer work. Because failures are retried, writes are designed to be idempotent rather than merely hopeful.
+
+The managed runtime exposes one durable Session through the terminal dashboard and web console. `createPlot()` is a separate embedding path: the application owns an in-process Session, credentials and history stay in memory, and cleanup is explicit. The lifetime changes; the division of responsibility does not.
+
+Plot does not decide what good work looks like. It makes sure that judgment is applied to the right revision, at the right time, while keeping the work observable to a person.

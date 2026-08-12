@@ -1,0 +1,31 @@
+---
+/**
+ * Responsive ASCII diagram. Scales the type down so the widest line
+ * always fits the container. `label` provides the text alternative;
+ * the raw ASCII is hidden from assistive technology.
+ *
+ * Usage in MDX:
+ *   <Prescii label="Two boxes joined by an arrow">
+ *     {`┌───┐ → ┌───┐`}
+ *   </Prescii>
+ */
+interface Props {
+  cols?: number
+  label: string
+}
+
+const { cols, label } = Astro.props
+const rendered = (await Astro.slots.render('default')) ?? ''
+const art = rendered.replace(/^\n+/, '').replace(/\s+$/, '')
+const text = art
+  .replace(/<[^>]+>/g, '')
+  .replaceAll('&lt;', '<')
+  .replaceAll('&gt;', '>')
+  .replaceAll('&amp;', '&')
+const columns = cols ?? Math.max(1, ...text.split('\n').map(line => line.length))
+---
+
+<figure class="prescii-frame" style={`--cols: ${columns}`}>
+  <pre class="prescii" aria-hidden="true" set:html={art} />
+  <figcaption class="sr-only">{label}</figcaption>
+</figure>

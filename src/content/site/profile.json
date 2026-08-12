@@ -1,0 +1,20 @@
+{
+  "name": "Igor Shegolev",
+  "role": "Software Engineer at Wix",
+  "biography": "I’m Igor Shegolev, a software engineer at Wix. I build developer tools and infrastructure for coding agents — the runtimes they run in and the systems that keep their work on track. Most of it is written in TypeScript and Rust.",
+  "email": "igorsheg@gmail.com",
+  "socials": [
+    {
+      "label": "GitHub",
+      "url": "https://github.com/igorsheg"
+    },
+    {
+      "label": "X",
+      "url": "https://x.com/igor_sheg"
+    }
+  ],
+  "homepage": {
+    "title": "Igor Shegolev — Software Engineer",
+    "description": "Igor Shegolev is a software engineer at Wix building developer tools and infrastructure for coding agents."
+  }
+}

@@ -1,0 +1,22 @@
+---
+/**
+ * Bordered, scrollable frame for CSS-only demos inside posts.
+ * Height accepts any CSS length; defaults to 20rem.
+ */
+interface Props {
+  height?: string
+  label: string
+}
+
+const { height, label } = Astro.props
+---
+
+<div
+  class="demo-frame"
+  style={height ? `--demo-height: ${height}` : undefined}
+  role="group"
+  aria-label={label}
+  tabindex="0"
+>
+  <slot />
+</div>

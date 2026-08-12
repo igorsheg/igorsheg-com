@@ -1,0 +1,37 @@
+---
+interface Props {
+  src: string
+  title: string
+  label?: string
+}
+
+const { src, title, label = 'Play video' } = Astro.props
+---
+
+<figure class="video-player">
+  <video src={src} aria-label={title} loop muted playsinline preload="metadata" controls>
+    <a href={src}>Open {title}</a>
+  </video>
+  <button class="video-overlay" type="button">{label}</button>
+  <figcaption class="sr-only">{title}</figcaption>
+  <noscript><style>.video-overlay { display: none; }</style></noscript>
+</figure>
+
+<script is:inline>
+  const player = document.currentScript?.previousElementSibling
+  const video = player?.querySelector('video')
+  const button = player?.querySelector('.video-overlay')
+
+  if (player && video && button) {
+    video.controls = false
+    button.addEventListener('click', () => video.play())
+    video.addEventListener('play', () => {
+      video.controls = true
+      player.classList.add('is-playing')
+    })
+    video.addEventListener('pause', () => {
+      video.controls = false
+      player.classList.remove('is-playing')
+    })
+  }
+</script>

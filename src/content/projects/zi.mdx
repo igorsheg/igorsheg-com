@@ -1,0 +1,60 @@
+---
+title: Zi
+description: A coding agent built to be understood, changed, and composed.
+order: 1
+links:
+  - label: Website
+    url: https://withzi.dev
+  - label: GitHub
+    url: https://github.com/igorsheg/zi
+---
+
+import Prescii from '../../components/Prescii.astro'
+
+Giving a model a repository and a shell is the easy part. The harder problem starts after the first useful task: how do you keep the work visible, add repository-specific behavior, and change the interface without replacing the agent underneath it?
+
+Zi treats the harness as a building block rather than a black box. It ships as a focused coding agent and exposes the seams needed to shape it.
+
+## One state owner
+
+Every way into Zi—the terminal, finite text and JSON modes, or a long-lived RPC client—goes through the same `AgentSession`. The client presents the work; it does not recreate the agent loop.
+
+<Prescii label="Zi clients converge on one agent session, which owns the provider, journal, and tool catalog"><span class="fg-green">{`interactive   text   JSONL   RPC
+     \\         |       |      /
+      +--------+-------+-----+
+               |
+         +-----v------+
+         |AgentSession|
+         +-----+------+
+           /   |    \\
+   provider  journal  tool catalog`}</span></Prescii>
+
+That session owns the transcript, queued steering, retries, compaction, work plans, and the current tool catalog. A journal can be resumed later; an RPC process sees ordered events from the same state the terminal uses.
+
+This boundary matters because there is only one answer to “what is the agent doing?” A different interface is a different view, not a second implementation.
+
+## The seams are public
+
+Small changes should stay small. Prompts and `AGENTS.md` carry instructions. Skills package repeatable workflows. Extensions add trusted commands, tools, durable session data, lifecycle handlers, and subagent profiles without patching Zi itself.
+
+<Prescii label="The model can call admitted tools directly or orchestrate the same catalog through Code Mode"><span class="fg-blue">{`model <----> AgentSession
+                  |
+          +-------+-------+
+          |               |
+     direct calls      Code Mode
+          |              zi.*
+          +-------+-------+
+                  |
+           admitted catalog
+        /          |          \\
+ built-ins     extensions    subagents`}</span></Prescii>
+
+Code Mode does not create a hidden second tool system. It gives the model JavaScript for loops, filtering, and multi-step control, while `zi.*` calls still pass through Zi’s admitted catalog, tracing, validation, and cancellation.
+
+Extensions and Code Mode workers contain crashes and hangs, not authority. They remain trusted local code with the user’s permissions. Zi makes that boundary explicit instead of presenting process isolation as a sandbox.
+
+## Delegation stays owned
+
+Subagents are reusable profiles backed by child Zi processes. The parent session owns their names, work cycles, completion evidence, cancellation, and cleanup. Children can investigate in parallel, but they do not become an invisible second fleet with independent state.
+
+The same design repeats throughout Zi: one named owner for state, narrow protocols at the edges, and durable evidence where work crosses a process boundary. The result is an agent you can use immediately, then teach one habit at a time.
