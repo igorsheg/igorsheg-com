@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "deploy": "wrangler pages deploy dist --project-name igorsheg-com",
+    "deploy": "wrangler deploy",
     "preview": "astro preview",
     "check": "astro check",
     "lint": "eslint .",

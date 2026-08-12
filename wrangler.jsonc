@@ -1,5 +1,13 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "igorsheg-com",
-  "pages_build_output_dir": "./dist"
+  "compatibility_date": "2026-08-12",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "observability": {
+    "enabled": false
+  }
 }
