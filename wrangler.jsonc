@@ -1,7 +1,5 @@
 {
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "igorsheg-com",
-  "pages_build_output_dir": "./dist",
-  "observability": {
-    "enabled": false
-  }
+  "pages_build_output_dir": "./dist"
 }

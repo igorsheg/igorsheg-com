@@ -20,6 +20,8 @@ Run the complete production validation before publishing:
 pnpm validate
 ```
 
+Cloudflare Pages builds with `pnpm build`, deploys with `pnpm deploy`, and serves `dist/`. The site is fully static, so it does not use the Cloudflare SSR adapter.
+
 Validation runs Astro diagnostics, ESLint, a production build, and static-output budgets. Generated HTML must stay at or below 30 KiB per page, and `dist/_astro` must contain no client JavaScript bundles.
 
 ## Content
