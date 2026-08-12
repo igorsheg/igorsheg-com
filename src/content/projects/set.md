@@ -9,6 +9,8 @@ links:
     url: https://github.com/igorsheg/set-up
 ---
 
-Set! is an open-source implementation of the card game Set. A React client renders the table; a Rust server coordinates multiplayer games over WebSockets.
+Set is a card game: twelve cards on the table, and players race to spot three that fit a pattern.
 
-It runs in the browser.
+Set! is an open-source implementation of it. A React client renders the table; a Rust server keeps the game state and coordinates players over WebSockets.
+
+It runs in the browser — no install, no account.
