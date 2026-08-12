@@ -1,0 +1,97 @@
+---
+title: The Box and the Pipeline
+description: Giving an agent a box and a prompt is powerful and wasteful. Decomposing the work into deterministic steps is cheap and crippling. Plot is an attempt at the middle.
+publishDate: 2026-08-12
+tags:
+  - agents
+  - plot
+draft: false
+---
+
+import Prescii from '../../components/Prescii.astro'
+
+Give a coding agent a repository, a shell, and a prompt, and it will do real work. That is the part that surprised everyone, and it still holds.
+
+Then run it a few hundred times against real work, and the other properties show up. It is expensive. It re-derives the same context every run. When it does the wrong thing, you have one knob, and turning it is guesswork — you change a paragraph of the prompt, run it again, and hope the difference you observe is the change and not variance. There is no seam in the middle to test, so there is nothing to evaluate except the whole thing.
+
+The obvious correction is to take the work apart. Decompose it into steps, decide each step yourself, and give the model a narrow tool for each one. Every stage becomes testable. Cost drops. Behavior becomes predictable.
+
+And you spend the intelligence.
+
+I have watched this happen to a workflow I owned. Each story grew its own purpose-built tools until a single file was two thousand lines of very specific capability, and the model had been reduced to selecting between branches I had already written. The tools encoded my judgment about what mattered, so the model could not apply its own. That is a bad trade, and the worst part is that it looks like progress while it is happening. Every individual tool was reasonable. The sum was a pipeline with a language model bolted to the front.
+
+<Prescii label="A box and a prompt is one opaque unit with a single knob; a pipeline is a chain of testable stages with no judgment left in it"><span class="fg-yellow">{`
+  a box and a prompt        a pipeline
+
+  +----------------+        +---+  +---+  +---+
+  |                |        | 1 |->| 2 |->| 3 |
+  |     model      |        +---+  +---+  +---+
+  |                |
+  +----------------+
+
+  one knob, no seams        every seam, no judgment`}</span></Prescii>
+
+Both failure modes come from the same mistake: treating "how much determinism" as one dial with the model on one end and the pipeline on the other.
+
+## Determinism belongs somewhere specific
+
+The useful question is not how much of the work should be deterministic. It is which parts.
+
+Some of the work does not benefit from intelligence at all, and actively suffers from it. Discovering what needs attention. Deciding whether two observations refer to the same thing. Knowing which revision is current. Deciding whether to retry, and when to stop. Making sure two runs do not act on the same item at once.
+
+None of that is judgment. All of it is bookkeeping, and a model doing bookkeeping is both expensive and unreliable — not because it cannot, but because it will do it slightly differently each time, and you will have no way to tell whether a difference was reasoning or noise.
+
+The rest is judgment, and it is the reason you wanted a model. Is this change correct. Does this test actually cover the behavior. Is this worth flagging to a person. You cannot write that down as a branch. If you could, you would not need the agent.
+
+<Prescii label="Bookkeeping tasks belong to the control plane; judgment tasks belong to the model"><span class="fg-green">{`
+  bookkeeping                 judgment
+  -----------                 --------
+  what needs attention        is this change correct
+  which revision is current   does the test cover it
+  has this already run        is this worth a person
+  retry, or stop
+
+             |                           |
+             v                           v
+
+    the control plane                the model`}</span></Prescii>
+
+[Plot](/projects/plot/) is a control plane I built around that split. It keeps coding agents working against things that keep changing — open pull requests, tickets, rows in a queue — and it is the only part of the system allowed to care about scheduling.
+
+An Extension observes an external system and returns Work Items with stable domain identities. A Workflow supplies the configuration, the model policy, and the prompt that defines good judgment. Plot owns reconciliation, claiming, scheduling, retries, timeouts, and the durable Session an operator can inspect.
+
+The model still gets a box and a prompt. It just does not also get the bookkeeping.
+
+## Reconcile, do not enqueue
+
+The mechanism that makes this work is narrower than it sounds.
+
+A Work Item's `id` names the domain object. Its `version` names the revision worth running. Discovery does not push events into a queue; it reports what the authoritative system says right now, in full. Plot compares that observation against what it already knows.
+
+Queues drift, because a queue is a second copy of the truth with its own failure modes. A complete observation cannot drift, because it is replaced rather than amended. If the version changes while an older run is active, the old run drains and the new revision is scheduled fresh. Nothing has to be invalidated by hand.
+
+Absence is how work finishes. Once a pull request is reviewed or a ticket is closed, the Extension stops returning it, and Plot drains and removes it. There is no completion signal to forget to send.
+
+That makes one edge case load-bearing. An empty discovery result is a statement of fact: there is nothing to do. So an Extension must never return empty because it failed. If the upstream API is unavailable, it throws, and Plot keeps the last known work and tries again later. The alternative — an outage that reads as "everything is done" — is a system that quietly stops working and reports success.
+
+The same reasoning applies at the other edge. Tools that mutate the world are resolved for a specific Work Item and run, and can re-check identity and version immediately before writing. A stale run does not get to act on newer work. And because failures are retried, writes have to be idempotent rather than merely hopeful.
+
+## What an integration costs
+
+The test of whether this split is real is how much control logic leaks back into an Extension.
+
+Plot's core — the agent runtime, the reconciler, the session, and the SDK — is about 5,800 lines. That is what owns ticking, claiming, scheduling, retries, timeouts, supersession, and durability.
+
+An Extension does none of it. The example weather source is 183 lines. The GitHub pull request reviewer, which is a real one I run, is 1,054 lines, and effectively all of it is GitHub: pagination, diff fetching, eligibility rules, posting a review. Neither contains a scheduler. Neither retries. Neither tracks whether its own run has gone stale, because neither is allowed to know.
+
+That is the number I would point at if someone asked whether the layering paid for itself. Not the size of the core — the size of the thing you write when you want to add an integration.
+
+## What this does not solve
+
+It makes the deterministic half testable, and that half is most of the machinery. Scheduling, claiming, staleness, and retry behavior can be verified without a model in the loop, which means the expensive, slow, non-deterministic component is no longer sitting in the middle of every test.
+
+It does not make judgment measurable. I can prove that the right revision ran at the right time, exactly once, against current state. I cannot prove the review it produced was good. Evaluation is still the hard problem, and separating the layers does not solve it — it only stops the machinery from being part of what you are trying to measure, which is a smaller claim than I would like to be making.
+
+What the split does buy is that when something goes wrong, the question "was this the system or the model?" has an answer.
+
+Plot does not decide what good work looks like. It makes sure that judgment is applied to the right revision, at the right time, while keeping the work visible to a person.

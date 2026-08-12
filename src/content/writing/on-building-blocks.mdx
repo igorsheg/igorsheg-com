@@ -1,0 +1,114 @@
+---
+title: On Building Blocks
+description: Mitchell Hashimoto argued that building blocks beat mainline applications. Pi already proved it for agent harnesses. Zi is my attempt to understand the idea by building one myself.
+publishDate: 2026-08-12
+tags:
+  - agents
+  - zi
+draft: false
+---
+
+import Prescii from '../../components/Prescii.astro'
+
+In April, Mitchell Hashimoto published *The Building Block Economy*. The argument is that the most effective way to build software and get adoption is no longer a high-quality mainline application, but a building block that enables other people to build on top of it.
+
+The numbers he gives are hard to wave away. Ghostty took eighteen months to reach a million daily macOS update checks. libghostty took two months to reach multiple millions of users.
+
+I read it while I was building a coding agent, and it changed what I was building.
+
+## The barrier that disappeared
+
+The mechanism Hashimoto identifies is the part worth sitting with. Models are okay at building things from scratch and genuinely good at gluing together components that are proven and well documented. Given the choice, they reach for the second option unless you tell them not to.
+
+Developers have always preferred to build on proven primitives. What changed is the barrier. Understanding a component well enough to assemble it correctly used to take real effort, and that effort limited how many people could participate. That barrier is mostly gone.
+
+For a coding agent this compounds, because the thing doing the assembling and the thing being extended are the same kind of software. If the agent is a block, you can point it at itself.
+
+## Prior art
+
+I want to be clear about where this post sits, because neither the idea nor the best execution of it is mine.
+
+Hashimoto's essay names Pi Mono alongside Next.js and Tailwind. That reference is not incidental here. [Pi](https://github.com/earendil-works/pi) is what I have been reading the entire time I have been building Zi.
+
+Pi is an agent harness decomposed into the layers you would design if you meant it: a unified multi-provider LLM API, an agent runtime that owns tool calling and state, a terminal UI library with differential rendering, and a coding agent CLI assembled from those pieces. Every package is separately installable. The coding agent is one composition of the stack rather than the reason the stack exists. Pi also ships documentation the agent can read about itself — you can ask it to explain how it works — which is where I took that idea from rather than arriving at it.
+
+So I did not get here first, and Zi is not the better implementation. Pi is, by a wide margin and with a far larger community around it.
+
+Zi is an experiment in doing it myself, because reading about a primitive and maintaining one turn out to be different activities. The question I wanted to answer was what it actually costs to build something other people can build on rather than only an end product: which seams you have to expose, which you have to refuse, and what breaks when you get that wrong.
+
+A word about that word. "Seams" is currently a reliable tell that a language model wrote the sentence, and Twitter has been merciless about it. I know. It is still the right word, I like it, and I am keeping it. It appears eight more times below.
+
+What follows is what I have found so far.
+
+## What a block has to expose
+
+[Zi](/projects/zi/) ships as a terminal coding agent. Most people will use it that way and never touch anything else. But the decision that shaped the codebase was that the terminal is one client, not the product.
+
+Every entry point — interactive terminal, print mode, JSON mode, a long-lived RPC client — goes through one `AgentSession`. That session owns the transcript, queued steering, retries, compaction, work plans, and the current tool catalog. A client presents the work. It does not re-implement the loop.
+
+That sounds like ordinary layering, and mostly it is. What makes it load-bearing is the rule that follows: there is exactly one answer to "what is the agent doing?" Adding an interface means adding a view. It does not mean adding a second implementation that will drift from the first.
+
+The second seam is extensions. Trusted TypeScript can add commands, tools, durable session data, lifecycle handlers, and subagent profiles without patching Zi. The test I hold this to is whether a small change stays small. If adding a repository-specific tool requires touching the agent loop, the seam is in the wrong place.
+
+The third seam took longer to accept. Subagents are reusable profiles backed by child Zi processes, and for a while I tried to make them purely an extension concern — the infrastructure is generic, so why should the agent know about them? I went back and forth on it three separate times. What settled it was that the parent has to own child names, work cycles, completion evidence, cancellation, and cleanup regardless of who spawns them. So the mechanics stayed built in, and both a Markdown profile with frontmatter and the programmatic extension API resolve to the same shape. One system, two ways to declare into it.
+
+## What the work plan pane cost
+
+Principles about seams are cheap. The way I test one is to add the next feature and count what it costs.
+
+Zi's terminal had grown a modal layer: a generic modal host at 215 lines, a subagent activity modal at 476, and a separate work plan details view at 146. Every new surface meant another modal reimplementing its own framing, focus handling, and content projection. The subagent modal had accumulated its own transcript rendering, because there was nowhere else to put it.
+
+So I replaced the modal layer with a layout system: a binary tree of panes at 248 lines, a 170-line view over it, and a 457-line workspace owner that decides what is displayed.
+
+Then came the actual test. The work plan had been a bespoke detail view. If the layout system was general, turning it into a pane should be small, and it should compose with the subagent pane without either knowing about the other. If it needed a special case in the layout core, the abstraction was wrong and I would rather find out on the second feature than the fifth.
+
+It came to 129 lines and a 62-line test.
+
+<Prescii label="The shared layer grew from 215 lines to 875 while per-feature cost fell from 622 lines to 274"><span class="fg-blue">{`
+                        before     after
+                        ------     -----
+  shared layer             215       875
+
+  per feature
+    subagent view          476       145
+    work plan view         146       129
+                        ------     -----
+    total                  622       274`}</span></Prescii>
+
+The shared layer is the modal host before, and the layout tree, its view, and the workspace owner after. It got substantially bigger. That is the trade: a larger thing in the middle so that each surface on top of it gets smaller.
+
+The two bespoke views together had been 622 lines. The three adapters that replaced them — subagent activity, subagent transcript source, and the work plan pane — are 274. The modal layer is gone.
+
+That is the building block argument at a scale where I can count it. Per-feature cost dropped by more than half, because the generic thing underneath turned out to be worth more than the sum of the special cases it replaced.
+
+The honest caveat is that this only pays in one direction. The layout system cost more to build than any single modal did, and if the work plan pane had been the last surface I ever added, it would have been a bad trade. A block is a bet that there will be a next one.
+
+## Documentation became an API surface
+
+The essay does not cover this, though Pi was already doing it in practice. It is the part that changed most about how I ship.
+
+If the factory is agentic, the primary reader of your documentation is an agent. Not eventually. Now.
+
+So Zi ships version-matched documentation and copyable examples beside the native executable. Not a website the model might find, and not a URL that describes a different release than the one installed. Files on disk, next to the binary, matching the binary. When you ask Zi to build an extension, a skill, or a subagent profile, it reads its own local docs before implementing.
+
+The failure this avoids is mundane and constant: an agent writing plausible code against an API that changed two versions ago. Shipping the docs with the binary makes the version question unanswerable in the wrong direction.
+
+It also produces the property I actually wanted, which is that the fastest way to extend Zi is to ask Zi.
+
+## How this changed the way I start projects
+
+The first question is no longer what the thing should do. It is what the smallest surface is that someone else could build on, and whether I am willing to keep that surface stable.
+
+The second is that the programmatic path and the CLI path have to descend from the same owner, or they will become two products. In Plot, application code can own a Session in-process while the CLI starts a durable one. Those were close to two implementations. Making the programmatic path primary and having the CLI compose on top of it was most of a refactor, and it was worth it — not because it removed lines, though it did, but because it removed the possibility of the two paths disagreeing about what Plot does.
+
+The third is smaller and easier to get wrong. Namespaces leak assumptions. Plot had packages prefixed with the names of the systems they wrapped, which advertised implementation detail as though it were part of the model. Removing those prefixes was mechanical. Noticing that they were describing the wrong thing was not.
+
+## Blocks are not free
+
+Every seam is a compatibility surface, and a public seam is a promise you have to keep while the thing behind it changes.
+
+By August I had added enough of them — extension APIs, notification surfaces, active tool mutation, subagent orchestration — that the honest question was whether I was still designing or just accumulating. I put new primitives behind a rule: no new public surface without a repeated, demonstrated need. Not a hypothetical one.
+
+Extensions and Code Mode workers contain crashes and hangs. They do not contain authority. They are trusted local code running with the user's permissions, and I would rather say that plainly than describe process isolation as a sandbox.
+
+A block with too many seams is not composable. It is unfinished. The goal is an agent you can use immediately and then teach one habit at a time, and a seam that does not serve that is cost without adoption.
